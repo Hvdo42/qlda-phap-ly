@@ -70,6 +70,10 @@ header p{font-size:12px;opacity:.82;margin-top:3px}
 .r-C{background:#B3E5FC;color:#01579B}
 .r-I{background:#F5F5F5;color:#757575}
 .r-empty{color:#ddd;font-size:13px}
+abbr.at{text-decoration:underline dotted #00897B;cursor:help;position:relative;font-style:normal}
+abbr.at::after{content:attr(data-tip);display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#004D40;color:#fff;font-size:11px;padding:5px 9px;border-radius:5px;white-space:normal;line-height:1.5;max-width:260px;min-width:120px;z-index:200;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.25);text-align:left}
+abbr.at::before{content:'';display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#004D40;z-index:201}
+abbr.at:hover::after,abbr.at:hover::before{display:block}
 
 /* Column headers */
 .step-header{display:grid;grid-template-columns:36px 1fr 100px 90px 90px 90px 60px 60px;gap:0;padding:7px 14px;background:#E0F2F1;font-size:11px;font-weight:700;color:#004D40;text-transform:uppercase;letter-spacing:.3px}
@@ -210,7 +214,39 @@ header p{font-size:12px;opacity:.82;margin-top:3px}
       <div style="margin-top:10px;font-size:12px;color:#888">Nguồn: Bùi Mạnh Thành – QS/PM Vietnam</div>
     </div>
   </div>
+
+  <!-- Bảng từ viết tắt -->
+  <div style="margin-top:14px">
+    <div class="legend-card" style="max-width:100%">
+      <h4>Bảng Từ viết tắt (di chuột vào từ viết tắt trong nội dung để xem giải thích nhanh)</h4>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input id="abbr-search" type="text" placeholder="Tìm từ viết tắt..." oninput="filterAbbr(this.value)"
+          style="flex:1;border:1.5px solid #b2dfdb;border-radius:6px;padding:6px 10px;font-size:13px;outline:none">
+      </div>
+      <div id="abbr-table" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:4px"></div>
+    </div>
+  </div>
 </div>
+
+<script>
+function renderAbbrTable(filter){
+  const el=document.getElementById('abbr-table');
+  if(!el) return;
+  const f=(filter||'').toLowerCase().trim();
+  let html='';
+  const sorted=Object.entries(ABBR).sort((a,b)=>a[0].localeCompare(b[0],'vi'));
+  for(const [k,v] of sorted){
+    if(f && !k.toLowerCase().includes(f) && !v.toLowerCase().includes(f)) continue;
+    html+=`<div style="display:flex;gap:8px;padding:5px 8px;border-radius:5px;background:#f7fdfb;border:1px solid #e0f0ee">
+      <span style="font-weight:800;color:#004D40;min-width:90px;flex-shrink:0;font-size:12px">${k}</span>
+      <span style="font-size:12px;color:#333;line-height:1.5">${v}</span>
+    </div>`;
+  }
+  el.innerHTML=html||'<div style="color:#888;font-size:12px;padding:8px">Không tìm thấy.</div>';
+}
+function filterAbbr(v){renderAbbrTable(v);}
+renderAbbrTable('');
+</script>
 
 <script>
 const DATA = {
@@ -444,8 +480,8 @@ const DATA = {
         {stt:40, title:'Thẩm định hồ sơ TKBVTC và Dự toán',
          law:'Điều 29,30 Luật XD 135/2025/QH15; Khoản 1 Điều 44 NĐ 175/2024',
          days:25, raci:{cqnn:'C',cdt:'R',tv:null,tvgs:null,nt:null},
-         authority:'CĐT tự thẩm định (C1) / CMXD tham gia thẩm định (C2: quy mô nhóm B trở lên, ảnh hưởng cộng đồng)',
-         note:'(C1) Dự án thông thường: CĐT tự thẩm định. (C2) Ảnh hưởng lớn an toàn cộng đồng: CMXD tham gia.'},
+         authority:'CĐT tự thẩm định (Cấp 1) / CMXD tham gia thẩm định (Cấp 2: quy mô nhóm B trở lên, ảnh hưởng cộng đồng)',
+         note:'(Cấp 1) Dự án thông thường: CĐT tự thẩm định thiết kế triển khai. (Cấp 2) Dự án ảnh hưởng lớn đến an toàn cộng đồng: Cơ quan CMXD tham gia thẩm định.'},
         {stt:41, title:'Phê duyệt TKBVTC, Dự toán dự án',
          law:'Khoản 1 Điều 29 Luật XD 135/2025/QH15; Điều 47 NĐ 175/2024/NĐ-CP',
          days:7, raci:{cqnn:null,cdt:'A',tv:'I',tvgs:null,nt:null},
@@ -539,7 +575,7 @@ const DATA = {
          note:'TB chấp thuận tối đa 30 ngày (CT Cấp I, Đặc biệt) và 20 ngày (CT còn lại). CĐT chỉ được quyết toán sau khi có văn bản này.'},
         {stt:55, title:'Nghiệm thu hoàn thành công trình, hạng mục công trình',
          law:'Khoản 2,3 Điều 57 LXD; Khoản 1 Điều 23 NĐ 06/2021',
-         days:'Sau CB NT', raci:{cqnn:'A',cdt:'I',tv:'I',tvgs:null,nt:'R'},
+         days:'Sau VB chấp thuận NT', raci:{cqnn:'A',cdt:'I',tv:'I',tvgs:null,nt:'R'},
          authority:'UBND Cấp Tỉnh/Cấp Xã (thẩm quyền theo NĐ 140/2025)',
          note:'Tổ chức sau khi có văn bản chấp thuận của CQNN. Chỉ nghiệm thu đưa vào sử dụng khi đã hoàn thành đầy đủ thi công, PCCC, MT.'},
         {stt:56, title:'Bàn giao công trình (Hạ tầng kỹ thuật, Nhà ở, Chung cư)',
@@ -561,6 +597,97 @@ const DATA = {
     },
   ]
 };
+
+// Từ viết tắt
+const ABBR = {
+  'ATVSLĐ':'An toàn Vệ sinh Lao động',
+  'BCNCKT':'Báo cáo Nghiên cứu Khả thi đầu tư xây dựng',
+  'BB':'Biên bản',
+  'BVMT':'Bảo vệ Môi trường',
+  'BVTC':'Bản vẽ Thi công',
+  'BQL':'Ban Quản lý',
+  'BXD':'Bộ Xây dựng',
+  'CA':'Công an',
+  'CMĐSDĐ':'Chuyển Mục đích Sử dụng Đất',
+  'CMXD':'Cơ quan Chuyên môn về Xây dựng (Bộ XD hoặc Sở XD theo phân cấp)',
+  'CQQLNN':'Cơ quan Quản lý Nhà nước',
+  'CQNN':'Cơ quan Nhà nước',
+  'CSDL':'Cơ sở Dữ liệu',
+  'CTCTĐT':'Chấp thuận Chủ trương Đầu tư',
+  'CĐT':'Chủ Đầu tư',
+  'DA':'Dự án',
+  'ĐTM':'Đánh giá Tác động Môi trường — bắt buộc trước khi phê duyệt dự án',
+  'GCNĐKĐT':'Giấy Chứng nhận Đăng ký Đầu tư',
+  'GPXD':'Giấy phép Xây dựng',
+  'GTVT':'Giao thông Vận tải',
+  'GĐ':'Giai đoạn',
+  'HC':'Hành chính',
+  'HĐKTNN':'Hội đồng Kiểm tra Nhà nước (kiểm tra chất lượng CT xây dựng)',
+  'HĐND':'Hội đồng Nhân dân',
+  'HĐ':'Hợp đồng',
+  'HS':'Hồ sơ',
+  'HTKT':'Hạ tầng Kỹ thuật',
+  'HTXH':'Hạ tầng Xã hội',
+  'KCN':'Khu Công nghiệp',
+  'KCX':'Khu Chế xuất',
+  'KKT':'Khu Kinh tế',
+  'KĐT':'Khu Đô thị',
+  'LXD':'Luật Xây dựng',
+  'MĐSDĐ':'Mục đích Sử dụng Đất',
+  'NĐT':'Nhà Đầu tư',
+  'NVQH':'Nhiệm vụ Quy hoạch — văn bản xác định mục tiêu, yêu cầu, nội dung và kinh phí lập quy hoạch',
+  'NT':'Nhà Thầu (trong bảng RACI) / Nghiệm Thu (trong tiêu đề Giai đoạn VIII)',
+  'PCCC':'Phòng Cháy Chữa Cháy',
+  'PPP':'Hợp tác Công tư (Public-Private Partnership)',
+  'QHCT':'Quy hoạch Chi tiết',
+  'QHĐTNT':'Quy hoạch Đô thị và Nông thôn',
+  'QLCL':'Quản lý Chất lượng',
+  'QLXD':'Quản lý Xây dựng',
+  'QPAN':'Quốc phòng An ninh',
+  'QSDĐ':'Quyền Sử dụng Đất',
+  'QĐĐT':'Quyết định Đầu tư / Người Quyết định Đầu tư',
+  'QP':'Quốc phòng',
+  'QS':'Quân sự',
+  'SDĐ':'Sử dụng Đất',
+  'TKBVTC':'Thiết kế Bản vẽ Thi công — hồ sơ thiết kế chi tiết đủ để thi công',
+  'TKCS':'Thiết kế Cơ sở — thiết kế ban đầu trong giai đoạn lập dự án',
+  'TKKT':'Thiết kế Kỹ thuật — bước thiết kế sau khi dự án được phê duyệt',
+  'TNMT':'Tài nguyên và Môi trường',
+  'TTCP':'Thủ tướng Chính phủ',
+  'TTXD':'Trật tự Xây dựng',
+  'TVGS':'Tư vấn Giám sát thi công',
+  'TB':'Thông báo',
+  'TC':'Thi công',
+  'UBND':'Ủy ban Nhân dân',
+  'VP':'Văn phòng Đăng ký đất đai',
+  'XD':'Xây dựng',
+};
+const ABBR_KEYS = Object.keys(ABBR).sort((a,b)=>b.length-a.length);
+
+function processText(text){
+  if(!text) return '';
+  const ph=[];
+  for(const k of ABBR_KEYS){
+    const esc=k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const re=new RegExp('(?<![\\wÀ-ỹĐđ])'+esc+'(?![\\wÀ-ỹĐđ])','g');
+    text=text.replace(re,m=>{
+      const i=ph.length;
+      ph.push(`<abbr class="at" data-tip="${ABBR[k]}">${m}</abbr>`);
+      return '\x00'+i+'\x00';
+    });
+  }
+  return text.replace(/\x00(\d+)\x00/g,(_,i)=>ph[+i]);
+}
+function wrapAbbr(html){
+  if(!html) return html;
+  let out='',rest=html,re=/<[^>]+>/g,last=0,m;
+  re.lastIndex=0;
+  while((m=re.exec(html))!==null){
+    out+=processText(html.slice(last,m.index))+m[0];
+    last=m.index+m[0].length;
+  }
+  return out+processText(html.slice(last));
+}
 
 // State
 let activeRole = null;
@@ -655,14 +782,14 @@ function renderTimeline(kw) {
 
     ph.steps.forEach(step => {
       const vis = stepMatchesRole(step) && stepMatchesKw(step,kw);
-      const hTitle = kw ? hl(step.title,kw) : step.title;
+      const hTitle = wrapAbbr(kw ? hl(step.title,kw) : step.title);
       html += `<div class="step-row${vis?'':' hidden'}">
         <div class="step-num">${step.stt}</div>
         <div class="step-main">
           <div class="step-title">${hTitle}</div>
           ${step.law?`<div class="step-law">${step.law}</div>`:''}
-          ${step.authority?`<span class="authority-tag">▸ ${step.authority}</span>`:''}
-          ${step.note?`<div class="step-note">${step.note}</div>`:''}
+          ${step.authority?`<span class="authority-tag">▸ ${wrapAbbr(step.authority)}</span>`:''}
+          ${step.note?`<div class="step-note">${wrapAbbr(step.note)}</div>`:''}
         </div>
         ${daysDisplay(step.days)}
         ${raciCell(step.raci.cqnn)}
@@ -702,12 +829,12 @@ function renderSearch(kw) {
       const dLabel = step.days===null?'–':typeof step.days==='string'?step.days:`${step.days} ngày`;
       html += `<div class="s-entry">
         <div class="s-phase">Giai đoạn ${ph.id} – ${ph.short}</div>
-        <div class="s-title">${hl(step.title,kw)}</div>
+        <div class="s-title">${wrapAbbr(hl(step.title,kw))}</div>
         ${step.law?`<div class="s-law">${step.law}</div>`:''}
         <div class="s-chips">
           <span class="s-days">⏱ ${dLabel}</span>${chips}
         </div>
-        ${step.note?`<div class="step-note" style="margin-top:6px">${step.note}</div>`:''}
+        ${step.note?`<div class="step-note" style="margin-top:6px">${wrapAbbr(step.note)}</div>`:''}
       </div>`;
     });
   });
