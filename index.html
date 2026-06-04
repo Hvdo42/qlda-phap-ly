@@ -113,11 +113,40 @@ abbr.at:hover::after,abbr.at:hover::before{display:block}
 .sum-card .sv{font-size:22px;font-weight:800;color:#00695C}
 .sum-card .sk{font-size:11px;color:#777;margin-top:2px}
 
+/* Mobile RACI inline */
+.mobile-meta{display:none;flex-wrap:wrap;gap:5px;align-items:center;margin-top:7px}
+.m-days{background:#E0F2F1;color:#004D40;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;white-space:nowrap}
+.m-sep{color:#ccc;font-size:12px;margin:0 2px}
+.m-role-item{display:flex;align-items:center;gap:3px}
+.m-role{font-size:10px;color:#555;white-space:nowrap;font-weight:500}
+
 @media(max-width:700px){
+  /* Phase header */
+  .phase-badge{width:30px;height:30px;font-size:13px;flex-shrink:0}
+  .phase-title h3{font-size:13px}
+  .phase-title .phase-law{display:none}
+  .phase-meta .days-pill{display:inline-flex;font-size:11px;padding:2px 8px}
+
+  /* Step row – 2 col: số + nội dung */
   .step-header{display:none}
-  .step-row{grid-template-columns:28px 1fr;gap:6px}
+  .step-row{grid-template-columns:26px 1fr;gap:6px;padding:9px 10px}
   .step-days,.raci-cell{display:none}
-  .phase-meta .days-pill{display:none}
+  .step-num{font-size:12px}
+  .step-title{font-size:13px}
+  .step-law{font-size:10px}
+  .step-note{font-size:10px;padding:3px 6px}
+  .authority-tag{font-size:9px}
+
+  /* Hiện RACI inline */
+  .mobile-meta{display:flex}
+
+  /* Summary bar */
+  .sum-card .sv{font-size:18px}
+  .sum-card{padding:8px 10px;min-width:80px}
+
+  /* Toolbar */
+  .toolbar{padding:8px 12px;gap:8px}
+  .role-filters span{display:none}
 }
 </style>
 </head>
@@ -738,6 +767,17 @@ function hl(text, kw) {
   }catch(e){return text;}
 }
 
+function mobileRaci(step){
+  const labels={cqnn:'CQQLNN',cdt:'Chủ ĐT',tv:'Tư vấn',tvgs:'TVGS',nt:'Nhà thầu'};
+  const parts=Object.entries(step.raci).filter(([,v])=>v)
+    .map(([k,v])=>`<span class="m-role-item"><span class="raci-badge r-${v}" style="width:18px;height:18px;line-height:18px;font-size:10px">${v}</span><span class="m-role">${labels[k]}</span></span>`)
+    .join('');
+  const dl=step.days===null||step.days===undefined?'':typeof step.days==='string'?step.days:`${step.days}n`;
+  const dp=dl?`<span class="m-days">⏱ ${dl}</span>${parts?'<span class="m-sep">|</span>':''}`:'';
+  if(!dp&&!parts) return '';
+  return `<div class="mobile-meta">${dp}${parts}</div>`;
+}
+
 function raciCell(val) {
   if(!val) return '<div class="raci-cell"><span class="r-empty">–</span></div>';
   return `<div class="raci-cell"><span class="raci-badge r-${val}">${val}</span></div>`;
@@ -787,6 +827,7 @@ function renderTimeline(kw) {
         <div class="step-num">${step.stt}</div>
         <div class="step-main">
           <div class="step-title">${hTitle}</div>
+          ${mobileRaci(step)}
           ${step.law?`<div class="step-law">${step.law}</div>`:''}
           ${step.authority?`<span class="authority-tag">▸ ${wrapAbbr(step.authority)}</span>`:''}
           ${step.note?`<div class="step-note">${wrapAbbr(step.note)}</div>`:''}
