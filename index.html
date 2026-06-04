@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QLDA – Tiến độ Pháp lý Dự án Đầu tư Xây dựng</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:14px;background:#f0f4f3;color:#1a2e2b}
+a{color:#00695C;text-decoration:none}
+
+/* Header */
+header{background:linear-gradient(135deg,#004D40 0%,#00695C 100%);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:14px}
+header .ico{font-size:38px;line-height:1;flex-shrink:0}
+header h1{font-size:19px;font-weight:700;line-height:1.3}
+header p{font-size:12px;opacity:.82;margin-top:3px}
+.header-meta{margin-left:auto;text-align:right;font-size:11px;opacity:.7;flex-shrink:0}
+
+/* Tabs */
+.tabs{display:flex;background:#00695C;padding:0 20px;gap:2px}
+.tab-btn{padding:10px 18px;color:#fff;border:none;background:none;cursor:pointer;font-size:13px;border-bottom:3px solid transparent;opacity:.7;font-weight:500;transition:opacity .15s}
+.tab-btn.active,.tab-btn:hover{opacity:1;border-bottom-color:#80CBC4}
+
+/* Toolbar */
+.toolbar{background:#fff;border-bottom:1px solid #d0e8e4;padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.toolbar input{flex:1;min-width:200px;border:1.5px solid #b2dfdb;border-radius:6px;padding:8px 12px;font-size:14px;outline:none;transition:border .15s}
+.toolbar input:focus{border-color:#00695C}
+.role-filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.role-filters span{font-size:12px;color:#555;font-weight:600;white-space:nowrap}
+.chip{padding:4px 11px;border:1.5px solid #b2dfdb;border-radius:14px;font-size:12px;cursor:pointer;background:#fff;user-select:none;white-space:nowrap;transition:all .15s;font-weight:500}
+.chip.active{background:#00695C;color:#fff;border-color:#00695C}
+.chip:hover:not(.active){border-color:#00695C;color:#00695C}
+.stats{font-size:12px;color:#666;padding:4px 20px 0;background:#fff;border-bottom:1px solid #e0edeb}
+
+/* Content */
+.tab-content{display:none;padding:16px 20px;max-width:1280px;margin:0 auto}
+.tab-content.active{display:block}
+
+/* Phase card */
+.phase-card{background:#fff;border-radius:10px;box-shadow:0 1px 5px rgba(0,0,0,.09);margin-bottom:14px;overflow:hidden}
+.phase-header{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;user-select:none;transition:background .15s}
+.phase-header:hover{background:#f0faf8}
+.phase-badge{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:#00695C;color:#fff;font-weight:800;font-size:15px;flex-shrink:0}
+.phase-title{flex:1}
+.phase-title h3{font-size:15px;font-weight:700;color:#004D40}
+.phase-title .phase-law{font-size:11px;color:#777;margin-top:2px}
+.phase-meta{display:flex;gap:10px;align-items:center;flex-shrink:0}
+.days-pill{background:#E0F2F1;color:#004D40;font-size:12px;font-weight:700;padding:3px 10px;border-radius:10px;white-space:nowrap}
+.phase-toggle{color:#00695C;font-size:18px;transition:transform .2s;flex-shrink:0}
+.phase-header.open .phase-toggle{transform:rotate(180deg)}
+.phase-body{display:none;border-top:1px solid #e0f0ee}
+.phase-body.open{display:block}
+
+/* Step row */
+.step-row{display:grid;grid-template-columns:36px 1fr 100px 90px 90px 90px 60px 60px;align-items:start;gap:0;padding:10px 14px;border-bottom:1px solid #f0f4f3;transition:background .1s}
+.step-row:last-child{border-bottom:none}
+.step-row:hover{background:#f7fdfb}
+.step-row.hidden{display:none}
+.step-num{font-weight:700;color:#00695C;font-size:13px;padding-top:2px}
+.step-main{}
+.step-title{font-weight:600;font-size:13px;color:#1a2e2b;line-height:1.4}
+.step-law{font-size:11px;color:#888;margin-top:3px;line-height:1.5}
+.step-note{font-size:11px;color:#5D4037;background:#FFF8E1;border-radius:4px;padding:4px 7px;margin-top:5px;line-height:1.5}
+.step-days{font-size:12px;font-weight:700;color:#00695C;text-align:center;padding-top:2px}
+.step-days.na{color:#aaa;font-weight:400}
+.raci-cell{text-align:center;padding-top:2px}
+.raci-badge{display:inline-block;width:22px;height:22px;line-height:22px;border-radius:50%;font-size:11px;font-weight:800;text-align:center}
+.r-R{background:#C8E6C9;color:#1B5E20}
+.r-A{background:#FFE0B2;color:#BF360C}
+.r-C{background:#B3E5FC;color:#01579B}
+.r-I{background:#F5F5F5;color:#757575}
+.r-empty{color:#ddd;font-size:13px}
+
+/* Column headers */
+.step-header{display:grid;grid-template-columns:36px 1fr 100px 90px 90px 90px 60px 60px;gap:0;padding:7px 14px;background:#E0F2F1;font-size:11px;font-weight:700;color:#004D40;text-transform:uppercase;letter-spacing:.3px}
+.step-header > div{text-align:center}
+.step-header .sh-main{text-align:left}
+
+/* Authority chip in step */
+.authority-tag{display:inline-block;font-size:10px;background:#E8F5E9;color:#2E7D32;border-radius:3px;padding:1px 5px;margin-top:4px;font-weight:600}
+
+/* Search tab */
+.search-section{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:14px 16px;margin-bottom:12px}
+.s-meta{font-size:12px;color:#888;margin-bottom:10px}
+.s-entry{padding:10px 12px;border-radius:6px;background:#f8fcfb;margin-bottom:8px;border-left:3px solid #80CBC4}
+.s-entry:hover{border-left-color:#00695C;background:#f0faf8}
+.s-phase{font-size:11px;color:#00695C;font-weight:700;margin-bottom:3px}
+.s-title{font-size:13px;font-weight:600;color:#1a2e2b;line-height:1.4}
+.s-title mark{background:#A5D6A7;padding:0 1px;border-radius:2px}
+.s-law{font-size:11px;color:#888;margin-top:3px}
+.s-chips{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;align-items:center}
+.s-days{font-size:11px;background:#E0F2F1;color:#004D40;padding:2px 7px;border-radius:10px;font-weight:700}
+.no-result{text-align:center;padding:40px 20px;color:#888;background:#fff;border-radius:8px}
+
+/* Legend tab */
+.legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:4px}
+.legend-card{background:#fff;border-radius:8px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.legend-card h4{font-size:13px;font-weight:700;color:#004D40;margin-bottom:10px;border-bottom:2px solid #E0F2F1;padding-bottom:6px}
+.legend-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.legend-badge{width:28px;height:28px;line-height:28px;border-radius:50%;font-size:13px;font-weight:800;text-align:center;flex-shrink:0}
+.legend-text{font-size:12px;color:#444;line-height:1.5}
+.legend-text strong{color:#222}
+.law-list{list-style:none;font-size:12px;color:#444;line-height:1.9}
+.law-list li::before{content:'▸ ';color:#00695C;font-weight:700}
+
+/* Summary bar */
+.summary-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.sum-card{background:#fff;border-radius:8px;padding:10px 14px;box-shadow:0 1px 4px rgba(0,0,0,.08);flex:1;min-width:120px}
+.sum-card .sv{font-size:22px;font-weight:800;color:#00695C}
+.sum-card .sk{font-size:11px;color:#777;margin-top:2px}
+
+@media(max-width:700px){
+  .step-header{display:none}
+  .step-row{grid-template-columns:28px 1fr;gap:6px}
+  .step-days,.raci-cell{display:none}
+  .phase-meta .days-pill{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="ico">🏗️</div>
+  <div>
+    <h1>Tiến độ Pháp lý – Dự án Đầu tư Xây dựng</h1>
+    <p>Ma trận RACI • Căn cứ Luật Đầu tư 2025, Luật Xây dựng 2025, Luật Đất đai 2024, Luật QHĐTNT 2024</p>
+  </div>
+  <div class="header-meta">Cập nhật:<br>2026-06-04</div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('timeline',this)">📋 Tiến độ</button>
+  <button class="tab-btn" onclick="switchTab('search',this)">🔍 Tìm kiếm</button>
+  <button class="tab-btn" onclick="switchTab('legend',this)">📖 Hướng dẫn</button>
+</div>
+
+<div class="toolbar">
+  <input type="text" id="kw" placeholder="Tìm bước thực hiện, căn cứ luật..." oninput="applyFilter()">
+  <div class="role-filters">
+    <span>Vai trò:</span>
+    <div class="chip" data-role="cdt" onclick="toggleRole(this)">Chủ đầu tư</div>
+    <div class="chip" data-role="tv" onclick="toggleRole(this)">Tư vấn</div>
+    <div class="chip" data-role="cqnn" onclick="toggleRole(this)">Cơ quan QLNN</div>
+    <div class="chip" data-role="tvgs" onclick="toggleRole(this)">Tư vấn GS</div>
+    <div class="chip" data-role="nt" onclick="toggleRole(this)">Nhà thầu</div>
+  </div>
+</div>
+<div class="stats" id="stats"></div>
+
+<!-- Timeline Tab -->
+<div class="tab-content active" id="tab-timeline">
+  <div class="summary-bar" id="summary-bar"></div>
+  <div id="phase-list"></div>
+</div>
+
+<!-- Search Tab -->
+<div class="tab-content" id="tab-search">
+  <div class="search-section">
+    <div class="s-meta" id="s-meta">Nhập từ khóa vào ô tìm kiếm phía trên để tìm bước thực hiện.</div>
+    <div id="s-results"></div>
+  </div>
+</div>
+
+<!-- Legend Tab -->
+<div class="tab-content" id="tab-legend">
+  <div class="legend-grid">
+    <div class="legend-card">
+      <h4>Ý nghĩa RACI</h4>
+      <div class="legend-row"><div class="legend-badge r-R">R</div><div class="legend-text"><strong>Responsible – Người thực hiện</strong><br>Đơn vị trực tiếp lập hồ sơ, triển khai công việc thực tế.</div></div>
+      <div class="legend-row"><div class="legend-badge r-A">A</div><div class="legend-text"><strong>Accountable – Người phê duyệt</strong><br>Cơ quan/cá nhân có thẩm quyền ra quyết định, phê duyệt cuối cùng.</div></div>
+      <div class="legend-row"><div class="legend-badge r-C">C</div><div class="legend-text"><strong>Consulted – Người thẩm định</strong><br>Cơ quan/cá nhân thẩm tra, thẩm định, cho ý kiến chuyên môn.</div></div>
+      <div class="legend-row"><div class="legend-badge r-I">I</div><div class="legend-text"><strong>Informed – Người được thông báo</strong><br>Đơn vị tiếp nhận hồ sơ, nhận kết quả để theo dõi, quản lý.</div></div>
+    </div>
+    <div class="legend-card">
+      <h4>Văn bản pháp luật chính</h4>
+      <ul class="law-list">
+        <li>Luật Đầu tư số 143/2025/QH15</li>
+        <li>Luật Xây dựng số 135/2025/QH15</li>
+        <li>Luật Đất đai số 31/2024/QH15</li>
+        <li>Luật Quy hoạch Đô thị & Nông thôn 47/2024/QH15</li>
+        <li>Nghị định 175/2024/NĐ-CP (hướng dẫn Luật XD)</li>
+        <li>Nghị định 96/2026/NĐ-CP (hướng dẫn Luật ĐT 2025)</li>
+        <li>Nghị định 140/2025/NĐ-CP (GPXD, QLXD)</li>
+        <li>Nghị định 178/2025/NĐ-CP (Quy hoạch)</li>
+        <li>Nghị định 102/2024/NĐ-CP (Đất đai)</li>
+        <li>Nghị định 06/2021/NĐ-CP (Thi công, QLCL)</li>
+      </ul>
+    </div>
+    <div class="legend-card">
+      <h4>Lưu ý quan trọng</h4>
+      <ul class="law-list">
+        <li><strong>Phân cấp GPXD:</strong> NĐ 140/2025 phân cấp mạnh cho UBND cấp Xã đối với CT nhỏ/nhà ở riêng lẻ.</li>
+        <li><strong>Trình tự rút gọn:</strong> Dự án đặc biệt/khẩn cấp (Luật ĐTC 58/2024) được áp dụng "vừa thiết kế vừa thi công".</li>
+        <li><strong>Tổng ngày CMĐSDĐ:</strong> Luật 2024 quy định ≤20 ngày, nhưng không tính thời gian xác định giá đất và nộp tiền.</li>
+        <li><strong>PCCC tích hợp:</strong> Từ LXD 2025, CMXD trực tiếp thẩm định thiết kế PCCC (không tách bước riêng).</li>
+      </ul>
+    </div>
+    <div class="legend-card">
+      <h4>Tổng hợp thời gian</h4>
+      <ul class="law-list">
+        <li><strong>Giai đoạn I – CTCTĐT:</strong> ~55 ngày pháp định</li>
+        <li><strong>Giai đoạn II – Quy hoạch 1/500:</strong> ~253 ngày</li>
+        <li><strong>Giai đoạn III – Đất đai/CMĐSDĐ:</strong> ~143 ngày</li>
+        <li><strong>Giai đoạn IV – BCNCKT + TKCS:</strong> ~258 ngày</li>
+        <li><strong>Giai đoạn V – Thiết kế triển khai:</strong> ~62 ngày</li>
+        <li><strong>Giai đoạn VI – Cấp GPXD:</strong> ~26 ngày</li>
+        <li><strong>Giai đoạn VII – Thi công:</strong> Theo hợp đồng</li>
+        <li><strong>Giai đoạn VIII – NT & Bàn giao:</strong> Theo quy định</li>
+      </ul>
+      <div style="margin-top:10px;font-size:12px;color:#888">Nguồn: Bùi Mạnh Thành – QS/PM Vietnam</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = {
+  phases: [
+    {
+      id:'I', title:'Chấp thuận Chủ trương Đầu tư', short:'CTCTĐT',
+      days:55, law:'Luật Đầu tư số 143/2025/QH15',
+      color:'#00695C',
+      steps:[
+        {stt:1, title:'Lập, nộp hồ sơ đề nghị CTCTĐT',
+         law:'Điều 24 và Điều 25 Luật Đầu tư 143/2025/QH15',
+         days:7, raci:{cqnn:null,cdt:'R',tv:'R',tvgs:null,nt:null},
+         authority:'',
+         note:'Nhà tư vấn hỗ trợ CĐT lập hồ sơ (nếu có). Nộp 4 bộ hồ sơ.'},
+        {stt:2, title:'Sở Tài Chính tiếp nhận, thụ lý hồ sơ',
+         law:'Điều 24-25 Luật ĐT 143/2025; Điều 31-35 NĐ 96/2026/NĐ-CP (hiệu lực 31/3/2026)',
+         days:1, raci:{cqnn:'R',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'Sở Tài Chính (Chủ trì lấy ý kiến)'},
+        {stt:3, title:'Sở Tài Chính gửi xin ý kiến các Sở, ngành, địa phương',
+         law:'Điều 24 và Điều 25 Luật Đầu tư 143/2025/QH15',
+         days:2, raci:{cqnn:'R',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:''},
+        {stt:4, title:'Các Sở, ngành tiếp nhận, tham gia góp ý phản hồi (XD, TNMT, GTVT, PCCC...)',
+         law:'Điều 24 và Điều 25 Luật Đầu tư 143/2025/QH15',
+         days:7, raci:{cqnn:'R',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'Các Sở, Ngành, UBND cấp Xã/Phường',
+         note:'Tham gia ý kiến về mặt chuyên môn theo chức năng quản lý.'},
+        {stt:5, title:'Yêu cầu CĐT cập nhật, hoàn thiện hồ sơ sau góp ý',
+         law:'Điều 24 và Điều 25 Luật Đầu tư 143/2025/QH15',
+         days:1, raci:{cqnn:null,cdt:'R',tv:null,tvgs:null,nt:null},
+         authority:''},
+        {stt:6, title:'Hoàn thiện hồ sơ theo ý kiến Sở/Ngành và nộp lại',
+         law:'Điều 24 và Điều 25 Luật Đầu tư 143/2025/QH15',
+         days:7, raci:{cqnn:null,cdt:'R',tv:null,tvgs:null,nt:null},
+         authority:'',
+         note:'Số ngày tuỳ thuộc vào CĐT và nội dung cần thực hiện.'},
+        {stt:7, title:'Thẩm định, và báo cáo tỉnh xem xét CTCTĐT',
+         law:'Điều 24-25 Luật ĐT 143/2025; Điều 31-35 NĐ 96/2026/NĐ-CP',
+         days:14, raci:{cqnn:'C',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:''},
+        {stt:8, title:'Xin ý kiến Bộ Quốc phòng và Bộ Công an (dự án khu vực đặc biệt)',
+         law:'Điểm đ Khoản 2 Điều 91 NĐ 96/2026/NĐ-CP; Điều 35 NĐ 96/2026',
+         days:1, raci:{cqnn:'R',cdt:null,tv:null,tvgs:null,nt:null},
+         authority:'Bộ QP, Bộ CA hoặc Bộ Chỉ huy QS cấp tỉnh, Công an cấp tỉnh',
+         note:'Áp dụng: đảo; xã biên giới; xã ven biển và khu vực ảnh hưởng QPAN.'},
+        {stt:9, title:'Bộ QP và Bộ CA có ý kiến phản hồi',
+         law:'Điểm đ Khoản 2 Điều 109 NĐ 96/2026/NĐ-CP',
+         days:7, raci:{cqnn:'C',cdt:null,tv:null,tvgs:null,nt:null},
+         authority:'Bộ QP, Bộ CA (Thẩm định, cho ý kiến)',
+         note:'Có trách nhiệm thẩm định, có ý kiến về đáp ứng yêu cầu bảo đảm QPAN.'},
+        {stt:10, title:'Quyết định CTCTĐT dự án',
+         law:'Điều 25 Luật Đầu tư 143/2025/QH15',
+         days:3, raci:{cqnn:'A',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'UBND Tỉnh / Thủ tướng / Ban QLDA KCN, KCX (tuỳ quy mô)'},
+        {stt:11, title:'Cấp Giấy chứng nhận đăng ký đầu tư (nếu CĐT có yêu cầu)',
+         law:'Điều 27 Luật Đầu tư 143/2025/QH15',
+         days:5, raci:{cqnn:'A',cdt:'R',tv:null,tvgs:null,nt:null},
+         authority:'Sở Tài Chính',
+         note:'Thẩm quyền cấp GCNĐKĐT ngoài KCN/KKT hiện giao cho Sở Tài chính.'},
+      ]
+    },
+    {
+      id:'II', title:'Lập & Trình duyệt Quy hoạch Chi tiết 1/500', short:'QHCT 1/500',
+      days:253, law:'Luật Quy hoạch Đô thị & Nông thôn 47/2024/QH15',
+      color:'#00695C',
+      steps:[
+        {stt:12, title:'Lập, trình Nhiệm vụ quy hoạch và dự toán',
+         law:'Khoản 3 Điều 4 NĐ 178/2025/NĐ-CP; Điều 17 Luật 47/2024/QH15',
+         days:30, raci:{cqnn:'A',cdt:'R',tv:null,tvgs:null,nt:null},
+         authority:'UBND Cấp Xã hoặc UBND Cấp Tỉnh (theo phân định NĐ 140/2025)',
+         note:'Thời gian lập nhiệm vụ QH ≤1 tháng; thời gian lập QH ≤6 tháng.'},
+        {stt:13, title:'Thẩm định Nhiệm vụ quy hoạch',
+         law:'Khoản 4 Điều 40 Luật 47/2024/QH15',
+         days:15, raci:{cqnn:'C',cdt:'R',tv:'I',tvgs:null,nt:null},
+         authority:'Bộ XD / Cơ quan CM thuộc UBND Cấp Tỉnh/Xã / Ban QL Khu CN',
+         note:'Thẩm định NVQH ≤15 ngày; thẩm định QH ≤30 ngày kể từ khi nhận đủ hồ sơ.'},
+        {stt:14, title:'Lấy ý kiến cơ quan QLNN trong quá trình thẩm định',
+         law:'Mục 6 Luật QHĐTNT; Khoản 1,2,4 Điều 36; Khoản 3,4 Điều 38,41',
+         days:7, raci:{cqnn:'C',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'Cơ quan chuyên môn về QH trực thuộc UBND cấp Xã/Phường',
+         note:'Tiến độ phụ thuộc cơ quan nhà nước.'},
+        {stt:15, title:'Phê duyệt Nhiệm vụ quy hoạch và dự toán',
+         law:'Mục 7 Luật QHĐTNT; Khoản 3 Điều 41 Luật 47/2024/QH15',
+         days:10, raci:{cqnn:'A',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'Thủ tướng CP / UBND Cấp Tỉnh / UBND Cấp Xã/Phường / BQL Khu CN'},
+        {stt:16, title:'Lập quy hoạch chi tiết',
+         law:'Khoản 3 Điều 4 NĐ 178/2025/NĐ-CP',
+         days:84, raci:{cqnn:null,cdt:'C',tv:'R',tvgs:null,nt:null},
+         authority:'',
+         note:'Tư vấn nước ngoài: 12–16 tuần. Không quá 6 tháng.'},
+        {stt:17, title:'Thẩm định hồ sơ quy hoạch (lần 1)',
+         law:'Khoản 4 Điều 40; Điều 38 Luật 47/2024/QH15',
+         days:30, raci:{cqnn:'C',cdt:'R',tv:'I',tvgs:null,nt:null},
+         authority:'Bộ XD / Cơ quan CM thuộc UBND Cấp Tỉnh/Xã / Ban QL Khu CN'},
+        {stt:18, title:'Niêm yết, lấy ý kiến cộng đồng dân cư và cơ quan ban ngành',
+         law:'Mục 6 Luật QHĐTNT; Khoản 1,6,7 Điều 37; Khoản 3,4 Điều 38,41',
+         days:30, raci:{cqnn:'C',cdt:'R',tv:'I',tvgs:null,nt:null},
+         authority:'Cơ quan lập QH / Chính quyền địa phương (Lấy ý kiến)',
+         note:'CQNN, tổ chức, chuyên gia: 15 ngày. Cộng đồng dân cư: 20–30 ngày kể từ ngày công khai.'},
+        {stt:19, title:'Cập nhật, hoàn thiện hồ sơ sau góp ý cộng đồng',
+         law:'',
+         days:7, raci:{cqnn:null,cdt:'A',tv:'R',tvgs:null,nt:null},
+         authority:'',
+         note:'Phải hoàn thành tổng hợp, tiếp thu, giải trình trước khi trình thẩm định.'},
+        {stt:20, title:'Thẩm định hồ sơ quy hoạch (lần 2)',
+         law:'Khoản 4 Điều 40; Điều 38 Luật 47/2024/QH15',
+         days:30, raci:{cqnn:'C',cdt:'R',tv:'I',tvgs:null,nt:null},
+         authority:'Bộ XD / Cơ quan CM thuộc UBND Cấp Tỉnh/Xã / Ban QL Khu CN'},
+        {stt:21, title:'Phê duyệt Đồ án QHCT 1/500',
+         law:'Khoản 2,3 Điều 41 Luật QH ĐTNT 47/2024/QH15',
+         days:10, raci:{cqnn:'A',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'Thủ tướng CP / UBND Cấp Tỉnh / UBND Cấp Xã/Phường / BQL Khu CN',
+         note:'UBND Tỉnh chỉ phê duyệt nếu dự án liên quan đến địa giới từ 2 đơn vị HC cấp huyện trở lên.'},
+      ]
+    },
+    {
+      id:'III', title:'Chuyển Mục đích Sử dụng Đất', short:'CMĐSDĐ',
+      days:143, law:'Luật Đất đai số 31/2024/QH15',
+      color:'#00695C',
+      steps:[
+        {stt:22, title:'Lập & Thẩm định Kế hoạch sử dụng đất hàng năm',
+         law:'Điều 60,70,71,73 Luật Đất đai; NĐ 102/2024/NĐ-CP',
+         days:55, raci:{cqnn:'R',cdt:null,tv:null,tvgs:null,nt:null},
+         authority:'UBND Cấp Xã lập; Sở TN&MT đầu mối; UBND Tỉnh phê duyệt',
+         note:'Phê duyệt xong trước ngày 31/12 hằng năm.'},
+        {stt:23, title:'Trình HĐND cấp tỉnh thông qua danh mục dự án phải thu hồi đất',
+         law:'Điều 72 Luật Đất đai',
+         days:null, raci:{cqnn:'C',cdt:null,tv:null,tvgs:null,nt:null},
+         authority:'Hội đồng Nhân dân Cấp tỉnh'},
+        {stt:24, title:'Phê duyệt và công bố công khai Kế hoạch SDĐ',
+         law:'Điều 72, 75 Luật Đất đai',
+         days:15, raci:{cqnn:'A',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'UBND cấp tỉnh phê duyệt; UBND cấp huyện/xã công bố công khai',
+         note:'Công khai chậm nhất 15 ngày kể từ ngày được phê duyệt.'},
+        {stt:25, title:'Nộp hồ sơ xin phép chuyển mục đích sử dụng đất',
+         law:'Khoản 1 Điều 227 Luật Đất đai; Điểm a Khoản 2,3 Điều 44 NĐ 102/2024',
+         days:10, raci:{cqnn:'I',cdt:'R',tv:null,tvgs:null,nt:null},
+         authority:'',
+         note:'Chủ đầu tư thực hiện lập hồ sơ. Thực hiện theo tiến độ CĐT.'},
+        {stt:26, title:'Thẩm tra, trình UBND tỉnh chấp thuận CMĐSDĐ',
+         law:'Khoản 2,3 Điều 227 Luật Đất đai; Điểm b,c Khoản 2 Điều 44 NĐ 102/2024',
+         days:15, raci:{cqnn:'C',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'Sở TN&MT hoặc Phòng TN&MT rà soát, kiểm tra thực địa',
+         note:'Sở TNMT thẩm tra.'},
+        {stt:27, title:'Ban hành quyết định cho phép CMĐSDĐ',
+         law:'Điều 123 Luật Đất đai; Điểm d Khoản 2 Điều 44 NĐ 102/2024',
+         days:5, raci:{cqnn:'A',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'UBND Cấp Tỉnh (đối với tổ chức) / UBND Cấp Xã/Phường (đối với cá nhân)'},
+        {stt:28, title:'Xác định thông tin địa chính và ra thông báo nộp tiền',
+         law:'Khoản 5 Điều 12; Điểm đ,e Khoản 2 Điều 44 NĐ 102/2024',
+         days:20, raci:{cqnn:'C',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'Cơ quan quản lý đất đai chuyển thông tin cho cơ quan thuế',
+         note:'Cơ quan thuế xác định và ban hành Thông báo nộp tiền.'},
+        {stt:29, title:'Thực hiện nghĩa vụ tài chính',
+         law:'Khoản 4 Điều 227 Luật Đất đai; Điểm g,h Khoản 2 Điều 44 NĐ 102/2024',
+         days:3, raci:{cqnn:'I',cdt:'R',tv:null,tvgs:null,nt:null},
+         authority:'Cơ quan thuế xác nhận hoàn thành, thông báo cho cơ quan QLĐĐ',
+         note:'Cơ quan thuế ra thông báo, NĐT nộp tiền, Sở TNMT cấp sổ mới.'},
+        {stt:30, title:'Cấp đổi Giấy chứng nhận QSDĐ',
+         law:'Khoản 5 Điều 227 Luật Đất đai; Điểm i,k Khoản 2 Điều 44 NĐ 102/2024',
+         days:20, raci:{cqnn:'A',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'Sở TN&MT cấp; VP Đăng ký đất đai cập nhật CSDL'},
+      ]
+    },
+    {
+      id:'IV', title:'Lập, Duyệt Thiết kế Cơ sở & Dự án Đầu tư', short:'BCNCKT+TKCS',
+      days:258, law:'Luật Xây dựng số 135/2025/QH15',
+      color:'#00695C',
+      steps:[
+        {stt:31, title:'Lập BCNCKT và Thiết kế cơ sở (TKCS)',
+         law:'Điều 23,24,25 Luật XD 135/2025/QH15; Khoản 5 Điều 15 NĐ 175/2024/NĐ-CP',
+         days:60, raci:{cqnn:null,cdt:'A',tv:'R',tvgs:null,nt:null},
+         authority:'Chủ đầu tư',
+         note:'Trong quá trình này, CĐT tiến hành xin các thỏa thuận đấu nối hạ tầng (Điện, nước, giao thông...).'},
+        {stt:'31+', title:'↳ Xin thỏa thuận đấu nối hạ tầng (Điện, nước, giao thông) – phục vụ lập dự án',
+         law:'Điều 12 NĐ 175/2024; Điểm a Khoản 5 Điều 15 NĐ 175/2024/NĐ-CP',
+         days:null, raci:{cqnn:null,cdt:'C',tv:'R',tvgs:null,nt:null},
+         authority:'',
+         note:'Phải có văn bản thỏa thuận cấp điện, nước, giao thông trước khi trình thẩm định BCNCKT.'},
+        {stt:32, title:'Thẩm tra Thiết kế cơ sở / BCNCKT',
+         law:'Khoản 5 Điều 26 LXD 135/2025/QH15; Khoản 6 Điều 19 NĐ 175/2024/NĐ-CP',
+         days:30, raci:{cqnn:null,cdt:'C',tv:'R',tvgs:null,nt:null},
+         authority:'Tư vấn thẩm tra độc lập',
+         note:'CĐT thuê đơn vị tư vấn độc lập thẩm tra làm cơ sở trình thẩm định. CT ảnh hưởng lớn đến an toàn cộng đồng hoặc có yêu cầu PCCC bắt buộc phải thẩm tra.'},
+        {stt:33, title:'Thẩm định BCNCKT, TKCS (và thiết kế PCCC) tại Cơ quan CMXD',
+         law:'Điểm c Khoản 4 Điều 27 LXD 2025; Điểm b Khoản 2 Điều 93 LXD 135/2025',
+         days:90, raci:{cqnn:'C',cdt:'R',tv:'I',tvgs:null,nt:null},
+         authority:'Bộ Xây dựng hoặc Sở Xây dựng (theo phân cấp)',
+         note:'Sở XD thẩm định toàn bộ DA trên địa bàn tỉnh kể cả CT Cấp I và Cấp Đặc biệt. CMXD đồng thời đánh giá giải pháp PCCC.'},
+        {stt:34, title:'Thực hiện thủ tục ĐTM / Giấy phép môi trường (song song)',
+         law:'Điều 30-34,35 Luật BVMT 72/2020/QH14; Điểm e Khoản 2 Điều 17 NĐ 175/2024',
+         days:45, raci:{cqnn:'A',cdt:'R',tv:'I',tvgs:null,nt:null},
+         authority:'Bộ TNMT / Sở TNMT theo phân cấp; UBND tỉnh / Bộ TNMT tuỳ nhóm DA',
+         note:'Hồ sơ qua Hội đồng thẩm định. ĐTM phải có kết quả trước khi phê duyệt dự án. Có thể thực hiện song song với các bước trước.'},
+        {stt:35, title:'Chủ đầu tư hoàn thiện hồ sơ theo yêu cầu thẩm định',
+         law:'Mục 2 Luật Xây dựng',
+         days:7, raci:{cqnn:'R',cdt:null,tv:null,tvgs:null,nt:null},
+         authority:'',
+         note:'CĐT chỉnh sửa theo yêu cầu (~20 ngày) + Cơ quan CMXD ra Thông báo (~5 ngày).'},
+        {stt:36, title:'Cơ quan CMXD ra Thông báo kết quả thẩm định BCNCKT',
+         law:'Khoản 1 Điều 27 Luật XD 135/2025/QH15',
+         days:20, raci:{cqnn:'C',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'Cơ quan CMXD (Bộ XD / Sở XD)'},
+        {stt:37, title:'Bộ QP, Bộ CA có ý kiến về bảo đảm quốc phòng, an ninh',
+         law:'Khoản 8 Điều 26 Luật XD 135/2025/QH15',
+         days:null, raci:{cqnn:'C',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'Bộ Quốc phòng, Bộ Công an',
+         note:'Chỉ áp dụng dự án đầu tư XD thuộc Danh mục dự án trọng yếu có yêu cầu QPAN.'},
+        {stt:'37b', title:'Phê duyệt dự án, quyết định đầu tư xây dựng',
+         law:'Điều 28 Luật XD 135/2025/QH15; Điều 22 NĐ 175/2024/NĐ-CP',
+         days:5, raci:{cqnn:'I',cdt:'A',tv:'I',tvgs:null,nt:null},
+         authority:'CĐT (vốn tư nhân) hoặc CQNN có thẩm quyền (vốn đầu tư công/PPP)',
+         note:'CĐT hoặc Người QĐĐT phê duyệt dựa trên kết quả thẩm định.'},
+      ]
+    },
+    {
+      id:'V', title:'Lập, Trình duyệt Thiết kế Triển khai', short:'TKKT/BVTC',
+      days:62, law:'Luật Xây dựng số 135/2025/QH15',
+      color:'#00695C',
+      steps:[
+        {stt:38, title:'Lập hồ sơ TKKT, TKBVTC và Tổng dự toán',
+         law:'Luật Xây dựng 135/2025/QH15',
+         days:null, raci:{cqnn:null,cdt:'A',tv:'R',tvgs:null,nt:null},
+         authority:'Chủ đầu tư',
+         note:'Làm song song theo tiến độ CĐT.'},
+        {stt:39, title:'Thẩm tra, lập báo cáo thẩm tra TKBVTC',
+         law:'Khoản 3 Điều 29 Luật XD 135/2025/QH15',
+         days:30, raci:{cqnn:null,cdt:'I',tv:'R',tvgs:null,nt:null},
+         authority:'Tư vấn thẩm tra độc lập',
+         note:'30 ngày/lần thẩm tra – tuỳ theo HĐ. CT ảnh hưởng lớn đến an toàn phải thẩm tra làm cơ sở thẩm định.'},
+        {stt:40, title:'Thẩm định hồ sơ TKBVTC và Dự toán',
+         law:'Điều 29,30 Luật XD 135/2025/QH15; Khoản 1 Điều 44 NĐ 175/2024',
+         days:25, raci:{cqnn:'C',cdt:'R',tv:null,tvgs:null,nt:null},
+         authority:'CĐT tự thẩm định (C1) / CMXD tham gia thẩm định (C2: quy mô nhóm B trở lên, ảnh hưởng cộng đồng)',
+         note:'(C1) Dự án thông thường: CĐT tự thẩm định. (C2) Ảnh hưởng lớn an toàn cộng đồng: CMXD tham gia.'},
+        {stt:41, title:'Phê duyệt TKBVTC, Dự toán dự án',
+         law:'Khoản 1 Điều 29 Luật XD 135/2025/QH15; Điều 47 NĐ 175/2024/NĐ-CP',
+         days:7, raci:{cqnn:null,cdt:'A',tv:'I',tvgs:null,nt:null},
+         authority:'Chủ đầu tư',
+         note:'CĐT thực hiện thẩm định, kiểm soát và phê duyệt thiết kế XD triển khai sau khi dự án được phê duyệt.'},
+      ]
+    },
+    {
+      id:'VI', title:'Xin Cấp Giấy phép Xây dựng', short:'GPXD',
+      days:26, law:'Luật Xây dựng 2025; NĐ 175/2024/NĐ-CP; NĐ 140/2025/NĐ-CP',
+      color:'#00695C',
+      steps:[
+        {stt:42, title:'Nộp hồ sơ đề nghị cấp GPXD',
+         law:'Khoản 2 Điều 46 Luật XD 135/2025/QH15',
+         days:1, raci:{cqnn:'I',cdt:'R',tv:null,tvgs:null,nt:null},
+         authority:'',
+         note:'Nộp tại Sở XD hoặc UBND tùy phân cấp.'},
+        {stt:43, title:'Thẩm định hồ sơ xin phép xây dựng',
+         law:'Khoản 1,2 Điều 44; Khoản 1,2,3 Điều 45 LXD; Điều 51,52 NĐ 175/2024',
+         days:20, raci:{cqnn:'C',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'UBND Cấp Tỉnh (ủy quyền Sở XD) hoặc UBND Cấp Xã (theo phân cấp)',
+         note:'Kiểm tra: hợp lệ HS; phù hợp MĐSDĐ, QH, PCCC, MT, kết nối HT. Lấy ý kiến CQNN liên quan.'},
+        {stt:44, title:'Cấp Giấy phép xây dựng',
+         law:'Điều 44,45 Luật XD 135/2025/QH15; Khoản 1 Điều 4 NĐ 140/2025/NĐ-CP',
+         days:5, raci:{cqnn:'A',cdt:'I',tv:null,tvgs:null,nt:null},
+         authority:'UBND Cấp Tỉnh (Sở XD) hoặc UBND Cấp Xã (theo phân cấp)',
+         note:'Trừ các công trình thuộc Khoản 2 Điều 43 Luật XD 2025 (miễn GPXD). NĐ 140/2025 phân cấp triệt để cho cấp Xã với CT nhỏ/nhà ở riêng lẻ.'},
+      ]
+    },
+    {
+      id:'VII', title:'Triển khai Thi công Xây dựng Công trình', short:'Thi công',
+      days:null, law:'Luật Xây dựng số 135/2025/QH15',
+      color:'#00695C',
+      steps:[
+        {stt:45, title:'Lập và phê duyệt biện pháp thi công, kế hoạch an toàn, vệ sinh môi trường',
+         law:'Điểm b Khoản 2 Điều 61 LXD 135/2025; Điểm đ Khoản 3 Điều 13, Điểm b Khoản 1 Điều 19 NĐ 06/2021',
+         days:'trước TC', raci:{cqnn:null,cdt:'A',tv:'C',tvgs:null,nt:'R'},
+         authority:'Nhà thầu lập; CĐT phê duyệt',
+         note:'Nhà thầu bắt buộc xác định vùng nguy hiểm; lập và trình CĐT chấp thuận biện pháp bảo đảm an toàn cho người, tài sản, thiết bị trong vùng nguy hiểm trước khi thi công. Phải thực hiện trước khi tổ chức thi công.'},
+        {stt:46, title:'Gửi Thông báo khởi công xây dựng',
+         law:'Điểm d Khoản 2 Điều 46; Khoản 3 Điều 48 Luật XD 135/2025/QH15',
+         days:'trước TC', raci:{cqnn:null,cdt:'R',tv:null,tvgs:null,nt:null},
+         authority:'Cơ quan QLNN về XD địa phương (UBND cấp Xã hoặc Tỉnh theo phân cấp) / Ban QL KCN',
+         note:'Gửi Thông báo khởi công kèm hồ sơ pháp lý liên quan cho cơ quan quản lý trật tự XD trước khi thi công thực địa.'},
+        {stt:47, title:'Quản lý trật tự xây dựng, kiểm tra đình chỉ vi phạm tại địa phương',
+         law:'Khoản 1,3 Điều 47 LXD 135/2025; Khoản 7,8 Điều 7 NĐ 140/2025/NĐ-CP',
+         days:'liên tục', raci:{cqnn:'C',cdt:'R',tv:null,tvgs:'R',nt:'R'},
+         authority:'UBND cấp Xã (trực tiếp quản lý, kiểm tra, đình chỉ theo phân cấp)',
+         note:'NĐ 140/2025: UBND cấp Xã được phân quyền rất mạnh trong việc theo dõi, kiểm tra, đình chỉ và cưỡng chế CT vi phạm TTXD. Từ khi nhận thông báo khởi công đến khi nghiệm thu bàn giao.'},
+        {stt:48, title:'Trực tiếp thi công xây dựng công trình và quản lý công trường',
+         law:'Khoản 2 Điều 49; Khoản 2 Điều 61 LXD 135/2025; Điều 20 NĐ 06/2021',
+         days:'Từng GĐ', raci:{cqnn:null,cdt:'A',tv:'C',tvgs:'C',nt:'R'},
+         authority:'',
+         note:'Nhà thầu thi công chịu trách nhiệm về chất lượng, an toàn, môi trường.'},
+        {stt:49, title:'Giám sát thi công xây dựng (chất lượng, khối lượng, tiến độ, an toàn)',
+         law:'Điều 19 NĐ 06/2021 (sửa đổi bởi NĐ 35/2023 và NĐ 175/2024)',
+         days:'Liên tục', raci:{cqnn:null,cdt:'A',tv:'C',tvgs:'R',nt:null},
+         authority:'CĐT (tự thực hiện nếu đủ năng lực) hoặc Nhà thầu tư vấn giám sát',
+         note:'TVGS được quyền tạm dừng thi công nếu mất an toàn hoặc sai thiết kế.'},
+      ]
+    },
+    {
+      id:'VIII', title:'Kết thúc, Nghiệm thu và Bàn giao Đưa vào Sử dụng', short:'NT & Bàn giao',
+      days:null, law:'Luật Xây dựng 135/2025/QH15; NĐ 06/2021',
+      color:'#00695C',
+      steps:[
+        {stt:50, title:'Lập bản vẽ hoàn công và Nhật ký thi công',
+         law:'Điểm d,h Khoản 2 Điều 61 LXD; Khoản 13 Điều 13, Phụ lục IIB NĐ 06/2021',
+         days:'Trong TC', raci:{cqnn:'I',cdt:'C',tv:null,tvgs:'R',nt:'R'},
+         authority:'',
+         note:'Lập ngay sau khi hoàn thành từng bộ phận bị che khuất hoặc toàn bộ CT. TVGS kiểm tra, xác nhận.'},
+        {stt:51, title:'Nghiệm thu công việc, giai đoạn thi công, bộ phận công trình',
+         law:'Khoản 1 Điều 57 LXD 135/2025; Điều 21,22 NĐ 06/2021',
+         days:'Từng GĐ', raci:{cqnn:null,cdt:'I',tv:'I',tvgs:'A',nt:'R'},
+         authority:'',
+         note:'Nghiệm thu trong vòng 24h kể từ khi nhận đề nghị của nhà thầu.'},
+        {stt:52, title:'Lập quy trình, kế hoạch và thực hiện Bảo trì công trình',
+         law:'Điều 31 NĐ 06/2021 (sửa đổi NĐ 35/2023, NĐ 175/2024)',
+         days:'Xuyên suốt', raci:{cqnn:null,cdt:'A',tv:'R',tvgs:null,nt:null},
+         authority:'',
+         note:'Tư vấn TK/cung cấp thiết bị lập quy trình bảo trì giao CĐT phê duyệt. Chủ sở hữu thực hiện bảo trì theo kế hoạch.'},
+        {stt:53, title:'Lập, nộp hồ sơ xin Kiểm tra công tác nghiệm thu (CT quy mô lớn, Cấp I)',
+         law:'Khoản 4 Điều 57 LXD; Điểm a Khoản 6 Điều 24 NĐ 06/2021',
+         days:'10–15 trước NT', raci:{cqnn:'I',cdt:'R',tv:null,tvgs:'I',nt:'I'},
+         authority:'Chủ đầu tư',
+         note:'Nộp trước 15 ngày (CT Cấp Đặc biệt, Cấp I) hoặc 10 ngày (CT còn lại) so với ngày dự kiến nghiệm thu.'},
+        {stt:54, title:'Kiểm tra và ra Văn bản chấp thuận kết quả nghiệm thu',
+         law:'Khoản 4 Điều 57 LXD 135/2025; Khoản 1 Điều 13 NĐ 144/2025/NĐ-CP',
+         days:'20–30 ngày', raci:{cqnn:'A',cdt:'R',tv:null,tvgs:'I',nt:'I'},
+         authority:'Bộ XD / Sở XD hoặc Hội đồng KTNN',
+         note:'TB chấp thuận tối đa 30 ngày (CT Cấp I, Đặc biệt) và 20 ngày (CT còn lại). CĐT chỉ được quyết toán sau khi có văn bản này.'},
+        {stt:55, title:'Nghiệm thu hoàn thành công trình, hạng mục công trình',
+         law:'Khoản 2,3 Điều 57 LXD; Khoản 1 Điều 23 NĐ 06/2021',
+         days:'Sau CB NT', raci:{cqnn:'A',cdt:'I',tv:'I',tvgs:null,nt:'R'},
+         authority:'UBND Cấp Tỉnh/Cấp Xã (thẩm quyền theo NĐ 140/2025)',
+         note:'Tổ chức sau khi có văn bản chấp thuận của CQNN. Chỉ nghiệm thu đưa vào sử dụng khi đã hoàn thành đầy đủ thi công, PCCC, MT.'},
+        {stt:56, title:'Bàn giao công trình (Hạ tầng kỹ thuật, Nhà ở, Chung cư)',
+         law:'Điều 58 Luật Xây dựng 135/2025/QH15',
+         days:'Sau NT', raci:{cqnn:'I',cdt:'R',tv:'I',tvgs:'I',nt:'R'},
+         authority:'Chủ sở hữu / Ban Quản trị / Cơ quan Nhà nước',
+         note:'KĐT: CĐT có trách nhiệm bàn giao HTKT, HTXH theo quy định. Nhà ở/chung cư: phải hoàn thành HTKT, HTXH thiết yếu.'},
+        {stt:57, title:'Thanh toán, Quyết toán vốn đầu tư xây dựng',
+         law:'Điều 79 Luật XD 135/2025/QH15; Khoản 5 Điều 33 NĐ 10/2021',
+         days:'Tối đa 9 tháng', raci:{cqnn:'A',cdt:'I',tv:'C',tvgs:null,nt:'R'},
+         authority:'Người quyết định đầu tư phê duyệt quyết toán',
+         note:'CĐT trình Người QĐĐT phê duyệt quyết toán chậm nhất 9 tháng kể từ ngày bàn giao đưa vào sử dụng.'},
+        {stt:58, title:'Bảo hành công trình xây dựng (Sửa chữa khiếm khuyết, hư hỏng)',
+         law:'Mục 5 Luật XD 2025; Điều 28,29 NĐ 06/2021 (sửa đổi NĐ 35/2023, NĐ 175/2024)',
+         days:'Theo HĐ', raci:{cqnn:'A',cdt:'R',tv:null,tvgs:null,nt:null},
+         authority:'Nhà thầu thi công/cung cấp thiết bị (chịu trách nhiệm bảo hành)',
+         note:'Bảo hành: kể từ ngày ký BB nghiệm thu đưa vào sử dụng (chung cư ≥24 tháng). Bảo trì: suốt thời hạn khai thác, sử dụng.'},
+      ]
+    },
+  ]
+};
+
+// State
+let activeRole = null;
+let activeTab = 'timeline';
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  activeTab = tab;
+  applyFilter();
+}
+
+function toggleRole(chip) {
+  const role = chip.dataset.role;
+  if(activeRole === role) {
+    activeRole = null;
+    chip.classList.remove('active');
+  } else {
+    document.querySelectorAll('.chip[data-role]').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    activeRole = role;
+  }
+  applyFilter();
+}
+
+function rmv(s){return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();}
+
+function stepMatchesRole(step) {
+  if(!activeRole) return true;
+  return step.raci[activeRole] !== null && step.raci[activeRole] !== undefined;
+}
+
+function stepMatchesKw(step, kw) {
+  if(!kw) return true;
+  const q = rmv(kw);
+  return rmv(step.title).includes(q) || rmv(step.law).includes(q) || rmv(step.note||'').includes(q) || rmv(step.authority||'').includes(q);
+}
+
+function hl(text, kw) {
+  if(!kw || !text) return text||'';
+  const q = kw.trim();
+  if(!q) return text;
+  try{
+    const re = new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+    return text.replace(re,'<mark>$1</mark>');
+  }catch(e){return text;}
+}
+
+function raciCell(val) {
+  if(!val) return '<div class="raci-cell"><span class="r-empty">–</span></div>';
+  return `<div class="raci-cell"><span class="raci-badge r-${val}">${val}</span></div>`;
+}
+
+function daysDisplay(days) {
+  if(days === null || days === undefined) return '<div class="step-days na">–</div>';
+  if(typeof days === 'string') return `<div class="step-days" style="font-size:10px;color:#00695C;font-weight:600">${days}</div>`;
+  return `<div class="step-days">${days}n</div>`;
+}
+
+function renderTimeline(kw) {
+  const container = document.getElementById('phase-list');
+  let totalVisible = 0;
+  let html = '';
+
+  DATA.phases.forEach((ph,pi) => {
+    const visSteps = ph.steps.filter(s=>stepMatchesRole(s)&&stepMatchesKw(s,kw));
+    if(visSteps.length===0) return;
+    totalVisible += visSteps.length;
+
+    const isOpen = !kw && !activeRole ? pi<2 : true;
+    const daysLabel = ph.days ? `${ph.days} ngày` : 'Tiến hành';
+
+    html += `<div class="phase-card">
+      <div class="phase-header${isOpen?' open':''}" onclick="togglePhase(this)">
+        <div class="phase-badge">${ph.id}</div>
+        <div class="phase-title">
+          <h3>${ph.title}</h3>
+          <div class="phase-law">${ph.law}</div>
+        </div>
+        <div class="phase-meta">
+          <span class="days-pill">⏱ ${daysLabel}</span>
+        </div>
+        <span class="phase-toggle">▾</span>
+      </div>
+      <div class="phase-body${isOpen?' open':''}">
+        <div class="step-header">
+          <div>STT</div><div class="sh-main">Nội dung công việc</div><div>Ngày</div>
+          <div>CQQLNN</div><div>Chủ ĐT</div><div>Tư vấn</div><div>TVGS</div><div>NT</div>
+        </div>`;
+
+    ph.steps.forEach(step => {
+      const vis = stepMatchesRole(step) && stepMatchesKw(step,kw);
+      const hTitle = kw ? hl(step.title,kw) : step.title;
+      html += `<div class="step-row${vis?'':' hidden'}">
+        <div class="step-num">${step.stt}</div>
+        <div class="step-main">
+          <div class="step-title">${hTitle}</div>
+          ${step.law?`<div class="step-law">${step.law}</div>`:''}
+          ${step.authority?`<span class="authority-tag">▸ ${step.authority}</span>`:''}
+          ${step.note?`<div class="step-note">${step.note}</div>`:''}
+        </div>
+        ${daysDisplay(step.days)}
+        ${raciCell(step.raci.cqnn)}
+        ${raciCell(step.raci.cdt)}
+        ${raciCell(step.raci.tv)}
+        ${raciCell(step.raci.tvgs)}
+        ${raciCell(step.raci.nt)}
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  container.innerHTML = html || '<div class="no-result">Không tìm thấy bước nào phù hợp.</div>';
+  return totalVisible;
+}
+
+function renderSearch(kw) {
+  const meta = document.getElementById('s-meta');
+  const results = document.getElementById('s-results');
+  if(!kw) {
+    meta.textContent = 'Nhập từ khóa vào ô tìm kiếm phía trên để tìm bước thực hiện.';
+    results.innerHTML = '';
+    return 0;
+  }
+  let found = 0, html = '';
+  DATA.phases.forEach(ph=>{
+    ph.steps.forEach(step=>{
+      if(!stepMatchesRole(step)||!stepMatchesKw(step,kw)) return;
+      found++;
+      const chips = Object.entries(step.raci)
+        .filter(([k,v])=>v)
+        .map(([k,v])=>{
+          const labels={cqnn:'CQQLNN',cdt:'Chủ ĐT',tv:'Tư vấn',tvgs:'TVGS',nt:'NT'};
+          return `<span class="raci-badge r-${v}" style="width:auto;padding:0 8px;border-radius:10px;font-size:11px">${labels[k]}: ${v}</span>`;
+        }).join('');
+      const dLabel = step.days===null?'–':typeof step.days==='string'?step.days:`${step.days} ngày`;
+      html += `<div class="s-entry">
+        <div class="s-phase">Giai đoạn ${ph.id} – ${ph.short}</div>
+        <div class="s-title">${hl(step.title,kw)}</div>
+        ${step.law?`<div class="s-law">${step.law}</div>`:''}
+        <div class="s-chips">
+          <span class="s-days">⏱ ${dLabel}</span>${chips}
+        </div>
+        ${step.note?`<div class="step-note" style="margin-top:6px">${step.note}</div>`:''}
+      </div>`;
+    });
+  });
+  meta.textContent = `Tìm thấy ${found} bước phù hợp với "${kw}"${activeRole?' (lọc theo vai trò)':''}`;
+  results.innerHTML = html || '<div class="no-result">Không tìm thấy kết quả.</div>';
+  return found;
+}
+
+function renderSummary() {
+  const total = DATA.phases.reduce((a,p)=>a+p.steps.length,0);
+  const totalDays = DATA.phases.reduce((a,p)=>a+(p.days||0),0);
+  const bar = document.getElementById('summary-bar');
+  bar.innerHTML = `
+    <div class="sum-card"><div class="sv">${DATA.phases.length}</div><div class="sk">Giai đoạn</div></div>
+    <div class="sum-card"><div class="sv">${total}</div><div class="sk">Bước thực hiện</div></div>
+    <div class="sum-card"><div class="sv">${totalDays}</div><div class="sk">Ngày pháp định (6 GĐ có thời hạn)</div></div>
+    <div class="sum-card"><div class="sv">2025–26</div><div class="sk">Cập nhật văn bản</div></div>`;
+}
+
+function applyFilter() {
+  const kw = document.getElementById('kw').value.trim();
+  let count = 0;
+  if(activeTab==='timeline' || !activeTab) {
+    count = renderTimeline(kw);
+  } else if(activeTab==='search') {
+    count = renderSearch(kw);
+  } else {
+    document.getElementById('stats').textContent='';
+    return;
+  }
+  const roleLabel = activeRole ? ` • Lọc: ${{'cqnn':'CQQLNN','cdt':'Chủ ĐT','tv':'Tư vấn','tvgs':'TVGS','nt':'Nhà thầu'}[activeRole]}` : '';
+  document.getElementById('stats').textContent = kw||activeRole ? `Hiển thị ${count} bước${kw?` cho "${kw}"`:''}${roleLabel}` : `Tổng cộng ${DATA.phases.reduce((a,p)=>a+p.steps.length,0)} bước thực hiện trong ${DATA.phases.length} giai đoạn`;
+}
+
+function togglePhase(header) {
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+
+// Init
+renderSummary();
+renderTimeline('');
+applyFilter();
+</script>
+</body>
+</html>
