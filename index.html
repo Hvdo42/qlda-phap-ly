@@ -83,17 +83,6 @@ abbr.at:hover::after,abbr.at:hover::before{display:block}
 /* Authority chip in step */
 .authority-tag{display:inline-block;font-size:10px;background:#E8F5E9;color:#2E7D32;border-radius:3px;padding:1px 5px;margin-top:4px;font-weight:600}
 
-/* Search tab */
-.search-section{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:14px 16px;margin-bottom:12px}
-.s-meta{font-size:12px;color:#888;margin-bottom:10px}
-.s-entry{padding:10px 12px;border-radius:6px;background:#f8fcfb;margin-bottom:8px;border-left:3px solid #80CBC4}
-.s-entry:hover{border-left-color:#00695C;background:#f0faf8}
-.s-phase{font-size:11px;color:#00695C;font-weight:700;margin-bottom:3px}
-.s-title{font-size:13px;font-weight:600;color:#1a2e2b;line-height:1.4}
-.s-title mark{background:#A5D6A7;padding:0 1px;border-radius:2px}
-.s-law{font-size:11px;color:#888;margin-top:3px}
-.s-chips{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;align-items:center}
-.s-days{font-size:11px;background:#E0F2F1;color:#004D40;padding:2px 7px;border-radius:10px;font-weight:700}
 .no-result{text-align:center;padding:40px 20px;color:#888;background:#fff;border-radius:8px}
 
 /* Legend tab */
@@ -112,6 +101,23 @@ abbr.at:hover::after,abbr.at:hover::before{display:block}
 .sum-card{background:#fff;border-radius:8px;padding:10px 14px;box-shadow:0 1px 4px rgba(0,0,0,.08);flex:1;min-width:120px}
 .sum-card .sv{font-size:22px;font-weight:800;color:#00695C}
 .sum-card .sk{font-size:11px;color:#777;margin-top:2px}
+
+/* Stakeholder tab */
+.sk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
+.sk-card{background:#fff;border-radius:10px;box-shadow:0 1px 5px rgba(0,0,0,.09);overflow:hidden}
+.sk-header{display:flex;align-items:center;gap:12px;padding:12px 16px;color:#fff}
+.sk-icon{font-size:22px;flex-shrink:0}
+.sk-name{font-size:15px;font-weight:700}
+.sk-phase-group{border-top:1px solid #f0f0f0}
+.sk-phase-title{background:#f0f4f3;color:#004D40;font-size:11px;font-weight:700;padding:6px 14px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #e0edeb}
+.sk-entry{padding:9px 14px;border-bottom:1px solid #f5f5f5}
+.sk-entry:last-child{border-bottom:none}
+.sk-entry:hover{background:#f7fdfb}
+.sk-law-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+.sk-law{font-size:11px;color:#00695C;font-weight:600;flex:1;min-width:0}
+.sk-ref{display:inline-block;font-size:10px;background:#E8F5E9;color:#2E7D32;border-radius:3px;padding:1px 6px;font-weight:600;flex-shrink:0;white-space:nowrap}
+.sk-task{font-size:12px;color:#444;line-height:1.65}
+@media(max-width:700px){.sk-grid{grid-template-columns:1fr}}
 
 /* Mobile RACI inline */
 .mobile-meta{display:none;flex-wrap:wrap;gap:5px;align-items:center;margin-top:7px}
@@ -163,8 +169,8 @@ abbr.at:hover::after,abbr.at:hover::before{display:block}
 
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab('timeline',this)">📋 Tiến độ</button>
-  <button class="tab-btn" onclick="switchTab('search',this)">🔍 Tìm kiếm</button>
-  <button class="tab-btn" onclick="switchTab('legend',this)">📖 Hướng dẫn</button>
+<button class="tab-btn" onclick="switchTab('legend',this)">📖 Hướng dẫn</button>
+  <button class="tab-btn" onclick="switchTab('stakeholders',this)">👥 Chủ thể</button>
 </div>
 
 <div class="toolbar">
@@ -184,14 +190,6 @@ abbr.at:hover::after,abbr.at:hover::before{display:block}
 <div class="tab-content active" id="tab-timeline">
   <div class="summary-bar" id="summary-bar"></div>
   <div id="phase-list"></div>
-</div>
-
-<!-- Search Tab -->
-<div class="tab-content" id="tab-search">
-  <div class="search-section">
-    <div class="s-meta" id="s-meta">Nhập từ khóa vào ô tìm kiếm phía trên để tìm bước thực hiện.</div>
-    <div id="s-results"></div>
-  </div>
 </div>
 
 <!-- Legend Tab -->
@@ -255,6 +253,11 @@ abbr.at:hover::after,abbr.at:hover::before{display:block}
       <div id="abbr-table" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:4px"></div>
     </div>
   </div>
+</div>
+
+<!-- Stakeholders Tab -->
+<div class="tab-content" id="tab-stakeholders">
+  <div class="sk-grid" id="stakeholder-list" style="padding:16px 20px;max-width:1280px;margin:0 auto"></div>
 </div>
 
 <script>
@@ -848,41 +851,6 @@ function renderTimeline(kw) {
   return totalVisible;
 }
 
-function renderSearch(kw) {
-  const meta = document.getElementById('s-meta');
-  const results = document.getElementById('s-results');
-  if(!kw) {
-    meta.textContent = 'Nhập từ khóa vào ô tìm kiếm phía trên để tìm bước thực hiện.';
-    results.innerHTML = '';
-    return 0;
-  }
-  let found = 0, html = '';
-  DATA.phases.forEach(ph=>{
-    ph.steps.forEach(step=>{
-      if(!stepMatchesRole(step)||!stepMatchesKw(step,kw)) return;
-      found++;
-      const chips = Object.entries(step.raci)
-        .filter(([k,v])=>v)
-        .map(([k,v])=>{
-          const labels={cqnn:'CQQLNN',cdt:'Chủ ĐT',tv:'Tư vấn',tvgs:'TVGS',nt:'NT'};
-          return `<span class="raci-badge r-${v}" style="width:auto;padding:0 8px;border-radius:10px;font-size:11px">${labels[k]}: ${v}</span>`;
-        }).join('');
-      const dLabel = step.days===null?'–':typeof step.days==='string'?step.days:`${step.days} ngày`;
-      html += `<div class="s-entry">
-        <div class="s-phase">Giai đoạn ${ph.id} – ${ph.short}</div>
-        <div class="s-title">${wrapAbbr(hl(step.title,kw))}</div>
-        ${step.law?`<div class="s-law">${step.law}</div>`:''}
-        <div class="s-chips">
-          <span class="s-days">⏱ ${dLabel}</span>${chips}
-        </div>
-        ${step.note?`<div class="step-note" style="margin-top:6px">${wrapAbbr(step.note)}</div>`:''}
-      </div>`;
-    });
-  });
-  meta.textContent = `Tìm thấy ${found} bước phù hợp với "${kw}"${activeRole?' (lọc theo vai trò)':''}`;
-  results.innerHTML = html || '<div class="no-result">Không tìm thấy kết quả.</div>';
-  return found;
-}
 
 function renderSummary() {
   const total = DATA.phases.reduce((a,p)=>a+p.steps.length,0);
@@ -897,15 +865,11 @@ function renderSummary() {
 
 function applyFilter() {
   const kw = document.getElementById('kw').value.trim();
-  let count = 0;
-  if(activeTab==='timeline' || !activeTab) {
-    count = renderTimeline(kw);
-  } else if(activeTab==='search') {
-    count = renderSearch(kw);
-  } else {
+  if(activeTab!=='timeline' && activeTab) {
     document.getElementById('stats').textContent='';
     return;
   }
+  const count = renderTimeline(kw);
   const roleLabel = activeRole ? ` • Lọc: ${{'cqnn':'CQQLNN','cdt':'Chủ ĐT','tv':'Tư vấn','tvgs':'TVGS','nt':'Nhà thầu'}[activeRole]}` : '';
   document.getElementById('stats').textContent = kw||activeRole ? `Hiển thị ${count} bước${kw?` cho "${kw}"`:''}${roleLabel}` : `Tổng cộng ${DATA.phases.reduce((a,p)=>a+p.steps.length,0)} bước thực hiện trong ${DATA.phases.length} giai đoạn`;
 }
@@ -915,9 +879,158 @@ function togglePhase(header) {
   header.nextElementSibling.classList.toggle('open');
 }
 
+const STAKEHOLDERS = [
+  {icon:'📐', name:'Tư vấn Thiết kế', bg:'#1565C0',
+   phases:[
+    {name:'Chuẩn bị dự án', entries:[
+      {law:'Luật Xây dựng 2014 (sửa đổi 2020)', ref:'Điều 52, 54, 55',
+       task:'Lập Báo cáo nghiên cứu tiền khả thi, Báo cáo nghiên cứu khả thi hoặc Báo cáo kinh tế – kỹ thuật đầu tư xây dựng. Thiết kế sơ bộ hoặc Thiết kế cơ sở để định hình quy mô, công nghệ, tổng mức đầu tư.'},
+      {law:'Nghị định 15/2021/NĐ-CP', ref:'Điều 9, 11',
+       task:'Thực hiện khảo sát xây dựng phục vụ lập dự án và lập thiết kế cơ sở. Thuyết minh thiết kế cơ sở và các bản vẽ quy hoạch bản chất kỹ thuật, tổng mặt bằng.'},
+      {law:'Nghị định 10/2021/NĐ-CP', ref:'Điều 5, 6',
+       task:'Tính toán, xác định Tổng mức đầu tư xây dựng (bao gồm chi phí xây dựng, thiết bị, quản lý dự án, tư vấn, dự phòng...) trong giai đoạn lập dự án.'},
+    ]},
+    {name:'Thực hiện dự án', entries:[
+      {law:'Luật Xây dựng 2014 (sửa đổi 2020)', ref:'Điều 78, 79, 80',
+       task:'Tuân thủ quy chuẩn kỹ thuật, tiêu chuẩn áp dụng cho công trình. Lập hồ sơ thiết kế triển khai sau thiết kế cơ sở (thiết kế 2 bước hoặc 3 bước) đảm bảo an toàn chịu lực, an toàn vận hành và phòng chống cháy nổ.'},
+      {law:'Luật Xây dựng 2014 (sửa đổi 2020)', ref:'Điều 86',
+       task:'Đề xuất thay đổi thiết kế phù hợp thực tế. Tham gia nghiệm thu giai đoạn, nghiệm thu hoàn thành. Chịu trách nhiệm về chất lượng thiết kế do mình đảm nhận; sửa đổi, khắc phục sai sót trong thiết kế. Từ chối các yêu cầu thay đổi thiết kế bất hợp lý của Chủ đầu tư.'},
+      {law:'Nghị định 15/2021/NĐ-CP', ref:'Điều 33, 34, 37',
+       task:'Quy định chi tiết về quy cách hồ sơ thiết kế tại các bước (TK kỹ thuật, TK bản vẽ thi công). Chỉnh sửa, hoàn thiện hồ sơ thiết kế theo ý kiến kết luận của cơ quan chuyên môn về xây dựng sau khi thẩm định.'},
+      {law:'Nghị định 06/2021/NĐ-CP', ref:'Điều 20',
+       task:'Thực hiện giám sát tác giả: Giải thích và làm rõ tài liệu thiết kế; Phối hợp giải quyết vướng mắc, phát sinh về thiết kế; Phát hiện và thông báo kịp thời cho Chủ đầu tư các sai sót của việc thi công so với thiết kế; Tham gia nghiệm thu.'},
+      {law:'Nghị định 10/2021/NĐ-CP', ref:'Điều 11, 12, 13',
+       task:'Lập Dự toán xây dựng công trình tương ứng với bước thiết kế triển khai sau thiết kế cơ sở. Xác định khối lượng chi tiết, áp định mức, đơn giá để hình thành giá trị dự toán chính xác làm cơ sở đấu thầu thi công.'},
+    ]},
+    {name:'Kết thúc & Vận hành', entries:[
+      {law:'Luật Xây dựng 2014 (sửa đổi 2020)', ref:'Điều 123, 124',
+       task:'Tham gia công tác nghiệm thu hoàn thành hạng mục công trình, công trình xây dựng để bàn giao đưa vào sử dụng. Ký biên bản nghiệm thu hoàn thành và các văn bản pháp lý liên quan thuộc trách nhiệm của bên thiết kế.'},
+      {law:'Nghị định 06/2021/NĐ-CP', ref:'Điều 26',
+       task:'Phối hợp lập Bản vẽ hoàn công trong trường hợp có sự thay đổi thiết kế trong quá trình thi công mà bản vẽ hoàn công do nhà thầu thi công lập cần có sự xác nhận độc lập hoặc điều chỉnh bổ sung của TVTK.'},
+      {law:'Nghị định 06/2021/NĐ-CP', ref:'Điều 31, 33',
+       task:'Tham gia xác định nguyên nhân và đưa ra giải pháp khắc phục khi xảy ra sự cố công trình (nếu có) trong quá trình thi công hoặc thời gian bảo hành, vận hành. Lập Quy trình bảo trì công trình xây dựng.'},
+    ]},
+  ]},
+  {icon:'📊', name:'Tư vấn QLDA (PMC)', bg:'#6A1B9A',
+   phases:[
+    {name:'Chuẩn bị dự án', entries:[
+      {law:'Luật Xây dựng 2014 (sửa đổi 2020)', ref:'Điều 64, 65',
+       task:'Thiết lập hệ thống quản lý dự án, lập kế hoạch tổng thể (tiến độ, chi phí, chất lượng). Phối hợp thực hiện các thủ tục xin phê duyệt quy hoạch, đánh giá tác động môi trường (ĐTM), phòng cháy chữa cháy (PCCC). Tổ chức lựa chọn nhà thầu khảo sát, thiết kế.'},
+      {law:'Nghị định 15/2021/NĐ-CP', ref:'Điều 23, 24',
+       task:'Quy định chi tiết hình thức tổ chức quản lý dự án đầu tư xây dựng và nội dung quản lý dự án của tổ chức tư vấn quản lý dự án.'},
+    ]},
+    {name:'Thực hiện dự án', entries:[
+      {law:'Nghị định 15/2021/NĐ-CP', ref:'Điều 24',
+       task:'Quản lý, điều phối toàn diện các nhà thầu (Thiết kế, Thẩm tra, Giám sát, Thi công). Kiểm soát tiến độ tổng thể, quản lý rủi ro dự án.'},
+      {law:'Nghị định 06/2021/NĐ-CP', ref:'Điều 14',
+       task:'Quản lý chất lượng công việc xây dựng, kiểm soát việc thực hiện hệ thống quản lý chất lượng của các nhà thầu thi công và tư vấn khác theo phân cấp ủy quyền của Chủ đầu tư.'},
+      {law:'Nghị định 10/2021/NĐ-CP', ref:'Điều 27',
+       task:'Kiểm soát chi phí, quản lý các thay đổi (Change Orders) và ký duyệt các hồ sơ thanh toán giai đoạn dưới sự ủy quyền của Chủ đầu tư.'},
+    ]},
+    {name:'Kết thúc & Bàn giao', entries:[
+      {law:'Nghị định 15/2021/NĐ-CP', ref:'Điều 24',
+       task:'Điều phối công tác nghiệm thu hoàn thành, chạy thử (Commissioning). Đôn đốc các bên lập hồ sơ hoàn công và bàn giao dự án đưa vào vận hành khai thác.'},
+      {law:'Nghị định 10/2021/NĐ-CP', ref:'Điều 35',
+       task:'Quản lý công tác lập hồ sơ quyết toán hợp đồng xây dựng; phối hợp thực hiện các thủ tục phục vụ công tác quyết toán dự án hoàn thành.'},
+    ]},
+  ]},
+  {icon:'🔍', name:'Tư vấn Thẩm tra', bg:'#BF360C',
+   phases:[
+    {name:'Chuẩn bị dự án', entries:[
+      {law:'Luật Xây dựng 2014 (sửa đổi 2020)', ref:'Điều 82',
+       task:'Thẩm tra Thiết kế cơ sở, Thẩm tra Tổng mức đầu tư khi có yêu cầu từ Chủ đầu tư để phục vụ công tác phê duyệt Dự án.'},
+      {law:'Nghị định 15/2021/NĐ-CP', ref:'Điều 26, 27',
+       task:'Thực hiện các nội dung thẩm tra của tổ chức tư vấn đối với Báo cáo nghiên cứu khả thi đầu tư xây dựng theo hợp đồng ký kết.'},
+    ]},
+    {name:'Thực hiện dự án', entries:[
+      {law:'Luật Xây dựng 2014 (sửa đổi 2020)', ref:'Điều 82 (sửa đổi Khoản 26 Điều 1 Luật 62/2020/QH14)',
+       task:'Thẩm tra thiết kế triển khai sau thiết kế cơ sở: Kiểm tra tính toán kết cấu, an toàn công trình, sự tuân thủ quy chuẩn/tiêu chuẩn áp dụng. Chịu trách nhiệm pháp lý về kết quả thẩm tra do mình thực hiện.'},
+      {law:'Nghị định 15/2021/NĐ-CP (sửa đổi NĐ 35/2023)', ref:'Điều 35, 36',
+       task:'Quy định chi tiết nội dung thẩm tra thiết kế xây dựng triển khai sau thiết kế cơ sở và quy trình hoàn thiện hồ sơ thiết kế theo ý kiến thẩm tra, thẩm định.'},
+      {law:'Nghị định 10/2021/NĐ-CP', ref:'Điều 13',
+       task:'Thẩm tra Dự toán xây dựng: Kiểm tra tính đúng đắn của khối lượng, định mức, đơn giá, chế độ chính sách chi phí.'},
+    ]},
+    {name:'Kết thúc & Bàn giao', entries:[
+      {law:'Nghị định 06/2021/NĐ-CP', ref:'Điều 31',
+       task:'Tham gia hỗ trợ thẩm tra, giám định nguyên nhân sự cố công trình hoặc đánh giá an toàn chịu lực nếu có yêu cầu đột xuất từ cơ quan chức năng hoặc Chủ đầu tư.'},
+    ]},
+  ]},
+  {icon:'👁️', name:'Tư vấn Giám sát', bg:'#00695C',
+   phases:[
+    {name:'Chuẩn bị & Khởi công', entries:[
+      {law:'Nghị định 06/2021/NĐ-CP', ref:'Điều 19',
+       task:'Kiểm tra các điều kiện khởi công công trình (Mặt bằng, giấy phép, hệ thống quản lý chất lượng của nhà thầu thi công). Phê duyệt Bản vẽ biện pháp thi công và Kế hoạch tổng thể về an toàn lao động của nhà thầu thi công.'},
+    ]},
+    {name:'Thực hiện dự án', entries:[
+      {law:'Luật Xây dựng 2014 (sửa đổi 2020)', ref:'Điều 120, 121',
+       task:'Giám sát thường xuyên, liên tục quá trình thi công: Kiểm tra vật liệu đầu vào, nghiệm thu các công việc xây dựng, giai đoạn thi công. Đảm bảo thi công đúng thiết kế và quy chuẩn, tiêu chuẩn kỹ thuật.'},
+      {law:'Nghị định 06/2021/NĐ-CP', ref:'Điều 19',
+       task:'Thống kê, kiểm soát các điều kiện thí nghiệm, quy trình kiểm tra chất lượng; yêu cầu nhà thầu sửa đổi, khắc phục sai sót. Giám sát việc thực hiện biện pháp An toàn lao động, vệ sinh môi trường trên công trường.'},
+      {law:'Nghị định 10/2021/NĐ-CP', ref:'Điều 15',
+       task:'Xác nhận khối lượng thi công xây dựng hoàn thành thực tế đảm bảo đúng hồ sơ thiết kế được duyệt để làm cơ sở thanh toán.'},
+    ]},
+    {name:'Kết thúc & Bàn giao', entries:[
+      {law:'Nghị định 06/2021/NĐ-CP', ref:'Điều 19, 26',
+       task:'Kiểm tra, xác nhận bản vẽ hoàn công. Chủ trì tổ chức nghiệm thu hoàn thành công trình/hạng mục công trình để bàn giao. Ký tên vào Biên bản nghiệm thu hoàn thành công trình đưa vào sử dụng.'},
+    ]},
+  ]},
+  {icon:'🏗️', name:'Nhà thầu Thi công', bg:'#4E342E',
+   phases:[
+    {name:'Chuẩn bị & Khởi công', entries:[
+      {law:'Nghị định 06/2021/NĐ-CP', ref:'Điều 12, 13',
+       task:'Tiếp nhận mặt bằng, tim mốc định vị công trình. Lập và trình phê duyệt hệ thống quản lý chất lượng, kế hoạch kiểm tra thí nghiệm (ITP), biện pháp tổ chức thi công và kế hoạch an toàn lao động.'},
+    ]},
+    {name:'Thực hiện dự án', entries:[
+      {law:'Luật Xây dựng 2014 (sửa đổi 2020)', ref:'Điều 113, 115',
+       task:'Thi công đúng thiết kế, quy chuẩn, tiêu chuẩn. Quản lý, đảm bảo an toàn lao động, môi trường xây dựng và các khu vực lân cận bị ảnh hưởng bởi thi công.'},
+      {law:'Nghị định 06/2021/NĐ-CP', ref:'Điều 13',
+       task:'Bố trí nhân lực, thiết bị thi công theo hợp đồng; lập nhật ký thi công, hồ sơ chất lượng, thực hiện thí nghiệm độc lập vật liệu xây dựng và cấu kiện lắp đặt.'},
+      {law:'Thông tư 10/2021/TT-BXD', ref:'Quy định an toàn lao động',
+       task:'Quản lý an toàn lao động: Chịu trách nhiệm toàn diện về an toàn trên công trường, thiết lập vùng nguy hiểm, cấp bảo hộ lao động, huấn luyện an toàn lao động định kỳ cho công nhân.'},
+      {law:'Nghị định 10/2021/NĐ-CP', ref:'Điều 15',
+       task:'Đo đạc, lập hồ sơ xác nhận khối lượng hoàn thành thực tế định kỳ, lập hồ sơ thanh toán khối lượng hoàn thành theo giai đoạn hợp đồng.'},
+    ]},
+    {name:'Kết thúc & Bàn giao', entries:[
+      {law:'Luật Xây dựng 2014 (sửa đổi 2020)', ref:'Điều 113, 124',
+       task:'Khắc phục các khiếm khuyết sau nghiệm thu, dọn dẹp mặt bằng công trường. Thực hiện nghĩa vụ bảo hành công trình theo thời hạn quy định.'},
+      {law:'Nghị định 06/2021/NĐ-CP', ref:'Điều 26, 28',
+       task:'Lập bản vẽ hoàn công, tập hợp toàn bộ hồ sơ quản lý chất lượng phục vụ nghiệm thu hoàn thành bàn giao công trình đưa vào sử dụng.'},
+      {law:'Nghị định 10/2021/NĐ-CP', ref:'Điều 35',
+       task:'Tổng hợp số liệu, lập và hoàn thiện Hồ sơ quyết toán hợp đồng xây dựng theo các điều khoản thỏa thuận pháp lý.'},
+    ]},
+  ]},
+];
+
+function renderStakeholders(){
+  let html='';
+  for(const sk of STAKEHOLDERS){
+    html+=`<div class="sk-card">
+      <div class="sk-header" style="background:${sk.bg}">
+        <span class="sk-icon">${sk.icon}</span>
+        <span class="sk-name">${sk.name}</span>
+      </div>`;
+    for(const ph of sk.phases){
+      html+=`<div class="sk-phase-group"><div class="sk-phase-title">${ph.name}</div>`;
+      for(const e of ph.entries){
+        html+=`<div class="sk-entry">
+          <div class="sk-law-row">
+            <span class="sk-law">${e.law}</span>
+            <span class="sk-ref">${e.ref}</span>
+          </div>
+          <div class="sk-task">${e.task}</div>
+        </div>`;
+      }
+      html+='</div>';
+    }
+    html+='</div>';
+  }
+  document.getElementById('stakeholder-list').innerHTML=html;
+}
+
 // Init
 renderSummary();
 renderTimeline('');
+renderStakeholders();
 applyFilter();
 </script>
 </body>
