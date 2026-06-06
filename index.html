@@ -119,12 +119,24 @@ abbr.at:hover::after,abbr.at:hover::before{display:block}
 .sk-task{font-size:12px;color:#444;line-height:1.65}
 @media(max-width:700px){.sk-grid{grid-template-columns:1fr}}
 
+/* Gantt tab */
+.gantt-ctrl{background:#fff;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.gantt-ctrl label{font-size:13px;font-weight:600;color:#004D40;white-space:nowrap}
+.gantt-ctrl input[type=date]{border:1.5px solid #b2dfdb;border-radius:6px;padding:6px 10px;font-size:13px;outline:none;color:#1a2e2b}
+.gantt-ctrl input[type=date]:focus{border-color:#00695C}
+.gantt-row:hover .gc-s{background:#f0faf8!important}
+.gantt-row:hover{background:#f0faf8}
+
 /* Mobile RACI inline */
 .mobile-meta{display:none;flex-wrap:wrap;gap:5px;align-items:center;margin-top:7px}
 .m-days{background:#E0F2F1;color:#004D40;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;white-space:nowrap}
 .m-sep{color:#ccc;font-size:12px;margin:0 2px}
 .m-role-item{display:flex;align-items:center;gap:3px}
 .m-role{font-size:10px;color:#555;white-space:nowrap;font-weight:500}
+
+/* Footer */
+footer{background:#37474F;color:#CFD8DC;text-align:center;padding:14px 20px;font-size:12px;margin-top:28px}
+footer a{color:#80CBC4;text-decoration:none}
 
 @media(max-width:700px){
   /* Phase header */
@@ -154,6 +166,16 @@ abbr.at:hover::after,abbr.at:hover::before{display:block}
   .toolbar{padding:8px 12px;gap:8px}
   .role-filters span{display:none}
 }
+@media print{
+  header,.tabs,.toolbar,.stats,.gantt-ctrl,#gantt-summary,#gantt-legend-row{display:none!important}
+  .tab-content{display:none!important}
+  #tab-gantt{display:block!important}
+  #gantt-print-area{overflow:visible!important;box-shadow:none!important;border-radius:0!important}
+  .gc-s{position:static!important}
+  .gantt-step-row{display:flex!important}
+  body{background:#fff!important;font-size:11px}
+  @page{size:A3 landscape;margin:8mm}
+}
 </style>
 </head>
 <body>
@@ -169,7 +191,8 @@ abbr.at:hover::after,abbr.at:hover::before{display:block}
 
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab('timeline',this)">📋 Tiến độ</button>
-<button class="tab-btn" onclick="switchTab('legend',this)">📖 Hướng dẫn</button>
+  <button class="tab-btn" onclick="switchTab('gantt',this)">📅 Lập tiến độ</button>
+  <button class="tab-btn" onclick="switchTab('legend',this)">📖 Hướng dẫn</button>
   <button class="tab-btn" onclick="switchTab('stakeholders',this)">👥 Chủ thể</button>
 </div>
 
@@ -252,6 +275,31 @@ abbr.at:hover::after,abbr.at:hover::before{display:block}
       </div>
       <div id="abbr-table" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:4px"></div>
     </div>
+  </div>
+</div>
+
+<!-- Gantt Tab -->
+<div class="tab-content" id="tab-gantt">
+  <div style="padding:16px 20px;max-width:100%">
+    <div class="gantt-ctrl" style="flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <label for="gantt-start">Ngày bắt đầu:</label>
+        <input type="date" id="gantt-start" onchange="renderGantt()">
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:12px;color:#555;font-weight:600;white-space:nowrap">Giai đoạn:</span>
+        <div class="chip active" id="gantt-all-chip" onclick="ganttToggleAll()">Tất cả</div>
+        <div id="gantt-chips" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:7px;flex-shrink:0;flex-wrap:wrap">
+        <button onclick="ganttExpandAll()" style="background:#E0F2F1;color:#004D40;border:1.5px solid #b2dfdb;border-radius:6px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer">▼ Mở rộng</button>
+        <button onclick="ganttCollapseAll()" style="background:#E0F2F1;color:#004D40;border:1.5px solid #b2dfdb;border-radius:6px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer">▲ Thu gọn</button>
+        <button id="btn-reset-steps" onclick="resetStepOverrides()" style="display:none;background:#FFF3E0;color:#E65100;border:1.5px solid #FFCC80;border-radius:6px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer">🔄 Xóa ngày tùy chỉnh</button>
+        <button onclick="exportGanttPDF()" style="background:#004D40;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.2px">📄 Xuất PDF</button>
+      </div>
+    </div>
+    <div id="gantt-summary"></div>
+    <div id="gantt-out"></div>
   </div>
 </div>
 
@@ -731,6 +779,9 @@ function switchTab(tab, btn) {
   btn.classList.add('active');
   document.getElementById('tab-'+tab).classList.add('active');
   activeTab = tab;
+  const showToolbar = tab === 'timeline';
+  document.querySelector('.toolbar').style.display = showToolbar ? '' : 'none';
+  document.getElementById('stats').style.display = showToolbar ? '' : 'none';
   applyFilter();
 }
 
@@ -1001,6 +1052,470 @@ const STAKEHOLDERS = [
   ]},
 ];
 
+// ── GANTT v2 ───────────────────────────────────────────
+const GANTT_COLORS = {
+  'I':'#00695C','II':'#1565C0','III':'#6A1B9A',
+  'IV':'#BF360C','V':'#E65100','VI':'#2E7D32',
+  'VII':'#4E342E','VIII':'#37474F'
+};
+let ganttPhaseStarts = {};
+let ganttStepOverrides = {}; // key: `${phId}_${stt}`, value: {start:'YYYY-MM-DD', end:'YYYY-MM-DD'}
+
+function ganttAddDays(date, n) {
+  const d = new Date(date); d.setDate(d.getDate() + n); return d;
+}
+
+function initGantt() {
+  document.getElementById('gantt-start').valueAsDate = new Date();
+  const ct = document.getElementById('gantt-chips');
+  DATA.phases.forEach(ph => {
+    const c = document.createElement('div');
+    c.className = 'chip active';
+    c.dataset.gid = ph.id;
+    c.textContent = `${ph.id} – ${ph.short}`;
+    c.onclick = () => { c.classList.toggle('active'); ganttSyncAllChip(); renderGantt(); };
+    ct.appendChild(c);
+  });
+  renderGantt();
+}
+
+function ganttSyncAllChip() {
+  const chips = [...document.querySelectorAll('#gantt-chips .chip')];
+  document.getElementById('gantt-all-chip').classList.toggle('active', chips.every(c => c.classList.contains('active')));
+}
+
+function ganttToggleAll() {
+  const btn = document.getElementById('gantt-all-chip');
+  const toOn = !btn.classList.contains('active');
+  btn.classList.toggle('active', toOn);
+  document.querySelectorAll('#gantt-chips .chip').forEach(c => c.classList.toggle('active', toOn));
+  renderGantt();
+}
+
+function overridePhaseStart(id, v) {
+  if (v) ganttPhaseStarts[id] = v; else delete ganttPhaseStarts[id];
+  renderGantt();
+}
+
+function overrideStepDate(phId, stt, field, value) {
+  const key = `${phId}_${stt}`;
+  if (!ganttStepOverrides[key]) ganttStepOverrides[key] = {};
+  if (value) ganttStepOverrides[key][field] = value;
+  else {
+    delete ganttStepOverrides[key][field];
+    if (!Object.keys(ganttStepOverrides[key]).length) delete ganttStepOverrides[key];
+  }
+  document.getElementById('btn-reset-steps').style.display = Object.keys(ganttStepOverrides).length ? 'inline-block' : 'none';
+  renderGantt();
+}
+
+function resetStepOverrides() {
+  ganttStepOverrides = {};
+  document.getElementById('btn-reset-steps').style.display = 'none';
+  renderGantt();
+}
+
+let ganttCollapsed = {};
+
+function toggleGanttPhase(id) {
+  ganttCollapsed[id] = !ganttCollapsed[id];
+  document.querySelectorAll(`.gsteps-${id}`).forEach(el => el.style.display = ganttCollapsed[id] ? 'none' : 'flex');
+  const btn = document.querySelector(`.gtoggle-${id}`);
+  if (btn) btn.textContent = ganttCollapsed[id] ? '▶' : '▼';
+}
+
+function ganttExpandAll() {
+  Object.keys(ganttCollapsed).forEach(id => { ganttCollapsed[id] = false; });
+  document.querySelectorAll('[class*="gsteps-"]').forEach(el => el.style.display = 'flex');
+  document.querySelectorAll('[class*="gtoggle-"]').forEach(b => b.textContent = '▼');
+}
+
+function ganttCollapseAll() {
+  DATA.phases.forEach(ph => { ganttCollapsed[ph.id] = true; });
+  document.querySelectorAll('[class*="gsteps-"]').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('[class*="gtoggle-"]').forEach(b => b.textContent = '▶');
+}
+
+function exportGanttPDF() {
+  const v = document.getElementById('gantt-start').value;
+  if (!v) return;
+  const globalStart = new Date(v + 'T00:00:00');
+  const sel = [...document.querySelectorAll('#gantt-chips .chip.active')].map(c => c.dataset.gid);
+  if (!sel.length) return;
+
+  // Build tasks (all expanded, independent of UI state)
+  const phaseTasks = [];
+  let cur = new Date(globalStart);
+  DATA.phases.filter(ph => sel.includes(ph.id)).forEach(ph => {
+    const phStart = ganttPhaseStarts[ph.id] ? new Date(ganttPhaseStarts[ph.id] + 'T00:00:00') : new Date(cur);
+    const col = GANTT_COLORS[ph.id] || '#00695C';
+    const steps = [];
+    let sc = new Date(phStart);
+    ph.steps.forEach(step => {
+      const key = `${ph.id}_${step.stt}`;
+      const ov = ganttStepOverrides[key] || {};
+      const nd = typeof step.days === 'number' ? step.days : null;
+      const ts = ov.start ? new Date(ov.start + 'T00:00:00') : new Date(sc);
+      let te, actualDays = nd;
+      if (ov.end) {
+        te = new Date(ov.end + 'T00:00:00');
+        actualDays = Math.round((te - ts) / 86400000) + 1;
+      } else if (nd) {
+        te = ganttAddDays(ts, nd - 1);
+      } else { te = null; }
+      steps.push({ stt: step.stt, title: step.title, days: actualDays, start: ts, end: te, fixed: !!te });
+      if (te) sc = ganttAddDays(te, 1);
+    });
+    const stepsWithEnd = steps.filter(s => s.end);
+    const phEnd = stepsWithEnd.length > 0 ? stepsWithEnd.reduce((a, s) => s.end > a ? s.end : a, stepsWithEnd[0].end) : phStart;
+    const pd = stepsWithEnd.reduce((a, s) => a + (s.days || 0), 0);
+    phaseTasks.push({ ph, col, start: phStart, end: phEnd, days: pd, steps });
+    cur = ganttAddDays(phEnd, 1);
+  });
+
+  const withDays = phaseTasks.filter(p => p.days > 0);
+  if (!withDays.length) return;
+  const chartEnd = withDays.reduce((a, p) => p.end > a ? p.end : a, withDays[0].end);
+
+  // Build month list
+  const months = [];
+  let mdi = new Date(globalStart.getFullYear(), globalStart.getMonth(), 1);
+  while (mdi < new Date(chartEnd.getFullYear(), chartEnd.getMonth() + 1, 1)) {
+    months.push(new Date(mdi)); mdi = new Date(mdi.getFullYear(), mdi.getMonth() + 1, 1);
+  }
+
+  // Adaptive column width: left panel 404px, A3 landscape ~1480px printable
+  const CW = Math.max(28, Math.min(55, Math.floor(1060 / months.length)));
+
+  // Fraction fill for a task within a month
+  function mf(ts, te, m) {
+    const mE = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+    const dim = mE.getDate();
+    if (!te || te < m || ts > mE) return null;
+    const os = ts > m ? ts : m, oe = te < mE ? te : mE;
+    const l = (os - m) / 86400000 / dim;
+    const w = ((oe - os) / 86400000 + 1) / dim;
+    return { l: Math.max(0, l), w: Math.min(1 - l, w) };
+  }
+
+  const W = {stt:24, name:200, start:76, end:72, days:32};
+
+  // Month header
+  const hdr = months.map(m =>
+    `<div style="flex-shrink:0;width:${CW}px;padding:3px 2px;font-size:${CW<36?7:8}px;font-weight:700;color:#004D40;text-align:center;border-right:1px solid #b2dfdb;overflow:hidden;white-space:nowrap">
+      ${m.toLocaleDateString('vi-VN',{month:'2-digit',year:'2-digit'})}
+    </div>`
+  ).join('');
+
+  let rows = '';
+  phaseTasks.forEach(pt => {
+    const {ph, col, start, end, days, steps} = pt;
+    const endStr = days > 0 ? end.toLocaleDateString('vi-VN') : '–';
+
+    const pCells = months.map(m => {
+      const f = mf(start, days > 0 ? end : null, m);
+      if (!f) return `<div style="flex-shrink:0;width:${CW}px;height:22px;border-right:1px solid ${col}18;background:${col}06"></div>`;
+      const lp = Math.round(f.l * CW), wp = Math.max(2, Math.round(f.w * CW));
+      return `<div style="flex-shrink:0;width:${CW}px;height:22px;border-right:1px solid ${col}33;position:relative;background:${col}0e">
+        <div style="position:absolute;left:${lp}px;width:${wp}px;height:14px;top:4px;background:${col};border-radius:3px;opacity:.9"></div>
+      </div>`;
+    }).join('');
+
+    rows += `<div style="display:flex;min-height:22px;background:${col}15;border-bottom:2px solid ${col}40">
+      <div style="width:${W.stt}px;flex-shrink:0;border-right:1px solid ${col}44;display:flex;align-items:center;justify-content:center"><span style="background:${col};color:#fff;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800">${ph.id}</span></div>
+      <div style="width:${W.name}px;flex-shrink:0;padding:3px 5px;font-size:11px;font-weight:700;color:${col};border-right:1px solid ${col}44;line-height:1.3">${ph.title}</div>
+      <div style="width:${W.start}px;flex-shrink:0;padding:3px 4px;font-size:9px;color:#444;border-right:1px solid ${col}44;display:flex;align-items:center">${start.toLocaleDateString('vi-VN')}</div>
+      <div style="width:${W.end}px;flex-shrink:0;padding:3px 4px;font-size:9px;color:#444;border-right:1px solid ${col}44;display:flex;align-items:center">${endStr}</div>
+      <div style="width:${W.days}px;flex-shrink:0;padding:3px 4px;font-size:11px;font-weight:800;color:${col};border-right:2px solid ${col};text-align:center;display:flex;align-items:center;justify-content:center">${days||'?'}</div>
+      ${pCells}
+    </div>`;
+
+    if (!ganttCollapsed[ph.id]) steps.forEach(step => {
+      const dStr = typeof step.days === 'number' ? `${step.days}n` : (step.days||'—');
+      const sCells = months.map(m => {
+        const f = mf(step.start, step.end, m);
+        if (!f) return `<div style="flex-shrink:0;width:${CW}px;height:18px;border-right:1px solid #f0f0f0"></div>`;
+        const lp = Math.round(f.l * CW), wp = Math.max(2, Math.round(f.w * CW));
+        const bCss = step.fixed ? `background:${col};opacity:.55;border-radius:2px` : `background:none;border:1px dashed ${col};opacity:.4;border-radius:2px`;
+        return `<div style="flex-shrink:0;width:${CW}px;height:18px;border-right:1px solid ${col}18;position:relative;background:${col}06">
+          <div style="position:absolute;left:${lp}px;width:${wp}px;height:10px;top:4px;${bCss}"></div>
+        </div>`;
+      }).join('');
+
+      rows += `<div style="display:flex;min-height:18px;border-bottom:1px solid #f0f0f0">
+        <div style="width:${W.stt}px;flex-shrink:0;padding:2px 3px;font-size:9px;color:#bbb;border-right:1px solid #f0f0f0;text-align:center">${step.stt}</div>
+        <div style="width:${W.name}px;flex-shrink:0;padding:2px 5px 2px 14px;font-size:10px;color:#333;border-right:1px solid #f0f0f0;line-height:1.4">${step.title}</div>
+        <div style="width:${W.start}px;flex-shrink:0;padding:2px 4px;font-size:9px;color:#666;border-right:1px solid #f0f0f0;display:flex;align-items:center">${step.start.toLocaleDateString('vi-VN')}</div>
+        <div style="width:${W.end}px;flex-shrink:0;padding:2px 4px;font-size:9px;color:#666;border-right:1px solid #f0f0f0;display:flex;align-items:center">${step.end?step.end.toLocaleDateString('vi-VN'):'–'}</div>
+        <div style="width:${W.days}px;flex-shrink:0;padding:2px 4px;font-size:10px;font-weight:600;color:#00695C;border-right:2px solid #b2dfdb;text-align:center;display:flex;align-items:center;justify-content:center">${dStr}</div>
+        ${sCells}
+      </div>`;
+    });
+  });
+
+  const calDays = Math.round((chartEnd - globalStart) / 86400000) + 1;
+  const totalFixed = phaseTasks.reduce((a, pt) => a + pt.days, 0);
+
+  const html = `<!DOCTYPE html><html lang="vi"><head>
+<meta charset="UTF-8"><title>Tiến độ Dự án</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;padding:0;background:#f0f4f3}
+.no-print{background:#004D40;color:#fff;padding:10px 20px;display:flex;align-items:flex-start;gap:16px;position:sticky;top:0;z-index:99;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.no-print button{background:#80CBC4;color:#004D40;border:none;border-radius:6px;padding:9px 20px;font-size:14px;font-weight:800;cursor:pointer;flex-shrink:0;margin-top:2px}
+.no-print button:hover{background:#fff}
+.no-print span{font-size:11px;line-height:1.9;opacity:.92}
+.content{padding:8mm}
+h2{font-size:13px;color:#004D40;margin-bottom:4px}
+.meta{font-size:9px;color:#666;margin-bottom:8px}
+.summary{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.sum{background:#E0F2F1;border-radius:5px;padding:4px 8px}
+.sv{font-size:14px;font-weight:800;color:#00695C}
+.sk{font-size:8px;color:#777;margin-top:1px}
+@media print{
+  .no-print{display:none!important}
+  body{background:#fff!important;padding:0}
+  .content{padding:0}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  @page{size:A3 landscape;margin:8mm}
+}
+</style>
+</head><body>
+<div class="no-print">
+  <button onclick="window.print()">📄 Xuất PDF</button>
+  <span>
+    ⚠️ Trong hộp thoại in:<br>
+    1. <strong>Printer/Máy in</strong>: chọn <strong>"Save as PDF"</strong> hoặc <strong>"Microsoft Print to PDF"</strong> &nbsp;(KHÔNG dùng Foxit hoặc phần mềm in khác)<br>
+    2. <strong>Layout/Hướng giấy</strong>: chọn <strong>Landscape (Ngang)</strong><br>
+    3. <strong>Paper/Khổ giấy</strong>: chọn <strong>A3</strong> nếu có &nbsp;→ nhấn Save
+  </span>
+</div>
+<div class="content">
+<h2>TIẾN ĐỘ PHÁP LÝ – DỰ ÁN ĐẦU TƯ XÂY DỰNG</h2>
+<div class="meta">Ngày bắt đầu: <strong>${globalStart.toLocaleDateString('vi-VN')}</strong> &nbsp;|&nbsp;
+Kết thúc dự kiến: <strong>${chartEnd.toLocaleDateString('vi-VN')}</strong> &nbsp;|&nbsp;
+Xuất ngày: ${new Date().toLocaleDateString('vi-VN')}</div>
+<div class="summary">
+  <div class="sum"><div class="sv">${phaseTasks.length}</div><div class="sk">Giai đoạn</div></div>
+  <div class="sum"><div class="sv">${phaseTasks.reduce((a,pt)=>a+pt.steps.length,0)}</div><div class="sk">Bước</div></div>
+  <div class="sum"><div class="sv">${totalFixed}</div><div class="sk">Ngày định mức</div></div>
+  <div class="sum"><div class="sv">${calDays}</div><div class="sk">Ngày lịch</div></div>
+</div>
+<div style="border:1px solid #b2dfdb;border-radius:6px;overflow:hidden">
+  <div style="display:flex;min-height:22px;background:#E0F2F1;border-bottom:2px solid #b2dfdb">
+    <div style="width:${W.stt}px;flex-shrink:0;padding:3px;font-size:9px;font-weight:700;color:#004D40;border-right:1px solid #b2dfdb;text-align:center">#</div>
+    <div style="width:${W.name}px;flex-shrink:0;padding:3px 6px;font-size:9px;font-weight:700;color:#004D40;border-right:1px solid #b2dfdb">GIAI ĐOẠN / CÔNG VIỆC</div>
+    <div style="width:${W.start}px;flex-shrink:0;padding:3px 4px;font-size:9px;font-weight:700;color:#004D40;border-right:1px solid #b2dfdb">BẮT ĐẦU</div>
+    <div style="width:${W.end}px;flex-shrink:0;padding:3px 4px;font-size:9px;font-weight:700;color:#004D40;border-right:1px solid #b2dfdb">KẾT THÚC</div>
+    <div style="width:${W.days}px;flex-shrink:0;padding:3px 4px;font-size:9px;font-weight:700;color:#004D40;border-right:2px solid #b2dfdb;text-align:center">NGÀY</div>
+    ${hdr}
+  </div>
+  ${rows}
+</div>
+<div style="margin-top:6px;font-size:8px;color:#888">▬ Thanh đặc = Có ngày định mức &nbsp;|&nbsp; ┄ Nét đứt = Không có ngày cố định</div>
+</div>
+</body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, '_blank', 'width=1400,height=900,scrollbars=yes');
+  if (!w) { alert('Trình duyệt đang chặn popup. Vui lòng cho phép popup cho trang này và thử lại.'); return; }
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+function renderGantt() {
+  const v = document.getElementById('gantt-start').value;
+  const out = document.getElementById('gantt-out');
+  const sumEl = document.getElementById('gantt-summary');
+  if (!v) { out.innerHTML = ''; sumEl.innerHTML = ''; return; }
+  const globalStart = new Date(v + 'T00:00:00');
+  const sel = [...document.querySelectorAll('#gantt-chips .chip.active')].map(c => c.dataset.gid);
+  if (!sel.length) { out.innerHTML = '<div class="no-result">Chọn ít nhất một giai đoạn.</div>'; sumEl.innerHTML = ''; return; }
+
+  const phaseTasks = [];
+  let cur = new Date(globalStart);
+
+  DATA.phases.filter(ph => sel.includes(ph.id)).forEach(ph => {
+    const phStart = ganttPhaseStarts[ph.id] ? new Date(ganttPhaseStarts[ph.id] + 'T00:00:00') : new Date(cur);
+    const col = GANTT_COLORS[ph.id] || '#00695C';
+    const steps = [];
+    let stepCur = new Date(phStart);
+
+    ph.steps.forEach(step => {
+      const key = `${ph.id}_${step.stt}`;
+      const ov = ganttStepOverrides[key] || {};
+      const nd = typeof step.days === 'number' ? step.days : null;
+      const ts = ov.start ? new Date(ov.start + 'T00:00:00') : new Date(stepCur);
+      let te, actualDays = nd;
+      if (ov.end) {
+        te = new Date(ov.end + 'T00:00:00');
+        actualDays = Math.round((te - ts) / 86400000) + 1;
+      } else if (nd) {
+        te = ganttAddDays(ts, nd - 1);
+      } else { te = null; }
+      steps.push({ stt: step.stt, title: step.title, days: actualDays, start: ts, end: te, fixed: !!te, hasOv: !!(ov.start || ov.end) });
+      if (te) stepCur = ganttAddDays(te, 1);
+    });
+
+    const stepsWithEnd = steps.filter(s => s.end);
+    const phEnd = stepsWithEnd.length > 0 ? stepsWithEnd.reduce((a, s) => s.end > a ? s.end : a, stepsWithEnd[0].end) : phStart;
+    const phaseDays = stepsWithEnd.reduce((a, s) => a + (s.days || 0), 0);
+    phaseTasks.push({ ph, col, start: phStart, end: phEnd, days: phaseDays, steps });
+    cur = ganttAddDays(phEnd, 1);
+  });
+
+  drawGantt(phaseTasks, globalStart);
+}
+
+function drawGantt(phaseTasks, chartStart) {
+  const out = document.getElementById('gantt-out');
+  const sumEl = document.getElementById('gantt-summary');
+  const withDays = phaseTasks.filter(p => p.days > 0);
+  if (!withDays.length) { out.innerHTML = '<div class="no-result">Không có dữ liệu tiến độ.</div>'; sumEl.innerHTML = ''; return; }
+  const chartEnd = withDays.reduce((a, p) => p.end > a ? p.end : a, withDays[0].end);
+
+  // Build month list from chartStart to chartEnd
+  const months = [];
+  let mdi = new Date(chartStart.getFullYear(), chartStart.getMonth(), 1);
+  const mBound = new Date(chartEnd.getFullYear(), chartEnd.getMonth() + 1, 1);
+  while (mdi < mBound) { months.push(new Date(mdi)); mdi = new Date(mdi.getFullYear(), mdi.getMonth() + 1, 1); }
+
+  const CW = 55; // px per month column on screen
+
+  // Fraction of month a task covers: returns {left, width} in [0,1] or null
+  function mFill(ts, te, m) {
+    const mEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+    const dim = mEnd.getDate();
+    if (!te || te < m || ts > mEnd) return null;
+    const os = ts > m ? ts : m, oe = te < mEnd ? te : mEnd;
+    const l = (os - m) / 86400000 / dim;
+    const w = ((oe - os) / 86400000 + 1) / dim;
+    return { l: Math.max(0, l), w: Math.min(1 - l, w) };
+  }
+
+  // Column widths for left sticky panel
+  const W = {stt:30, name:230, start:108, end:100, days:46};
+  const sL = [0, W.stt, W.stt+W.name, W.stt+W.name+W.start, W.stt+W.name+W.start+W.end];
+  const gs = (i, bg='#fff') => `flex-shrink:0;position:sticky;left:${sL[i]}px;z-index:3;background:${bg}`;
+  const gh = (i) => `flex-shrink:0;position:sticky;left:${sL[i]}px;z-index:12;background:#E0F2F1`;
+
+  // Today — highlight current month column
+  const todayM = new Date(); todayM.setDate(1); todayM.setHours(0,0,0,0);
+
+  // Month header row
+  let mHeader = '';
+  months.forEach(m => {
+    const isCur = (m.getFullYear()===todayM.getFullYear() && m.getMonth()===todayM.getMonth());
+    mHeader += `<div style="flex-shrink:0;width:${CW}px;padding:4px 2px;font-size:10px;font-weight:700;color:#004D40;text-align:center;border-right:1px solid #b2dfdb;background:${isCur?'#FFF3E0':'#E0F2F1'};overflow:hidden;white-space:nowrap;box-sizing:border-box">
+      ${m.toLocaleDateString('vi-VN',{month:'short',year:'2-digit'})}${isCur?'<br><span style="font-size:8px;color:#E65100">▲hôm nay</span>':''}
+    </div>`;
+  });
+
+  let rows = '';
+  phaseTasks.forEach(pt => {
+    const {ph, col, start, end, days, steps} = pt;
+    const startVal = start.toISOString().split('T')[0];
+    const endStr = days > 0 ? end.toLocaleDateString('vi-VN') : '–';
+    const collapsed = !!ganttCollapsed[ph.id];
+
+    // Phase month cells
+    let pCells = '';
+    months.forEach(m => {
+      const f = mFill(start, days > 0 ? end : null, m);
+      if (!f) { pCells += `<div style="flex-shrink:0;width:${CW}px;height:36px;border-right:1px solid ${col}18;background:${col}06"></div>`; return; }
+      const lp = Math.round(f.l * CW), wp = Math.max(3, Math.round(f.w * CW));
+      pCells += `<div style="flex-shrink:0;width:${CW}px;height:36px;border-right:1px solid ${col}33;position:relative;background:${col}0e">
+        <div style="position:absolute;left:${lp}px;width:${wp}px;height:20px;top:8px;background:${col};border-radius:4px;opacity:.88"></div>
+      </div>`;
+    });
+
+    rows += `<div class="gantt-row" style="display:flex;min-height:36px;border-bottom:2px solid ${col}44;background:${col}0d;cursor:pointer" onclick="toggleGanttPhase('${ph.id}')">
+      <div class="gc-s" style="${gs(0,col+'0d')};width:${W.stt}px;padding:5px 6px;border-right:1px solid ${col}44;display:flex;align-items:center;justify-content:center">
+        <span class="gtoggle-${ph.id}" style="font-size:11px;font-weight:700;color:${col}">${collapsed?'▶':'▼'}</span>
+      </div>
+      <div class="gc-s" style="${gs(1,col+'0d')};width:${W.name}px;padding:5px 8px;border-right:1px solid ${col}44;display:flex;align-items:center;gap:7px">
+        <span style="background:${col};color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0">${ph.id}</span>
+        <span style="font-size:13px;font-weight:700;color:${col};line-height:1.3">${ph.title}</span>
+      </div>
+      <div class="gc-s" style="${gs(2,col+'0d')};width:${W.start}px;padding:3px 6px;border-right:1px solid ${col}44;display:flex;align-items:center" onclick="event.stopPropagation()">
+        <input type="date" value="${startVal}" onchange="overridePhaseStart('${ph.id}',this.value)"
+          style="width:100%;border:1.5px solid ${col}66;border-radius:5px;padding:3px 5px;font-size:11px;outline:none;background:#fff;color:#1a2e2b">
+      </div>
+      <div class="gc-s" style="${gs(3,col+'0d')};width:${W.end}px;padding:5px 7px;border-right:1px solid ${col}44;font-size:11px;color:#555;display:flex;align-items:center">${endStr}</div>
+      <div class="gc-s" style="${gs(4,col+'0d')};width:${W.days}px;padding:5px 6px;border-right:3px solid ${col};font-size:12px;font-weight:800;color:${col};text-align:center;display:flex;align-items:center;justify-content:center">${days||'?'}</div>
+      ${pCells}
+    </div>`;
+
+    steps.forEach(step => {
+      const dStr = typeof step.days === 'number' ? `${step.days}n` : (step.days || '?');
+      const ssStr = step.start.toLocaleDateString('vi-VN');
+      const seStr = step.end ? step.end.toLocaleDateString('vi-VN') : '–';
+
+      let sCells = '';
+      months.forEach(m => {
+        const f = mFill(step.start, step.end, m);
+        if (!f) { sCells += `<div style="flex-shrink:0;width:${CW}px;height:28px;border-right:1px solid #f0f0f0;background:#fafafa"></div>`; return; }
+        const lp = Math.round(f.l * CW), wp = Math.max(2, Math.round(f.w * CW));
+        const barCss = step.fixed
+          ? `background:${col};opacity:.55;border-radius:2px`
+          : `background:none;border:2px dashed ${col};opacity:.4;border-radius:2px`;
+        sCells += `<div style="flex-shrink:0;width:${CW}px;height:28px;border-right:1px solid ${col}20;position:relative;background:${col}07">
+          <div style="position:absolute;left:${lp}px;width:${wp}px;height:14px;top:7px;${barCss}"></div>
+        </div>`;
+      });
+
+      const sStartVal = step.start.toISOString().split('T')[0];
+      const sEndVal = step.end ? step.end.toISOString().split('T')[0] : '';
+      const ovBorder = step.hasOv ? `border-color:${col}99` : 'border-color:#e0edeb';
+      rows += `<div class="gantt-row gsteps-${ph.id} gantt-step-row" style="display:${collapsed?'none':'flex'};min-height:28px;border-bottom:1px solid #f0f0f0;background:${step.hasOv?col+'07':''}">
+        <div class="gc-s" style="${gs(0,step.hasOv?col+'07':'#fff')};width:${W.stt}px;padding:4px 6px;font-size:11px;color:#bbb;border-right:1px solid #f0f0f0;text-align:center">${step.stt}</div>
+        <div class="gc-s" style="${gs(1,step.hasOv?col+'07':'#fff')};width:${W.name}px;padding:4px 8px 4px 22px;font-size:12px;color:#444;border-right:1px solid #f0f0f0;line-height:1.4">${step.title}</div>
+        <div class="gc-s" style="${gs(2,step.hasOv?col+'07':'#fff')};width:${W.start}px;padding:2px 5px;border-right:1px solid #f0f0f0;display:flex;align-items:center">
+          <input type="date" value="${sStartVal}" onchange="overrideStepDate('${ph.id}','${step.stt}','start',this.value)"
+            style="width:100%;border:1.5px solid;${ovBorder};border-radius:4px;padding:2px 3px;font-size:10px;outline:none;background:transparent;color:#444;cursor:pointer">
+        </div>
+        <div class="gc-s" style="${gs(3,step.hasOv?col+'07':'#fff')};width:${W.end}px;padding:2px 5px;border-right:1px solid #f0f0f0;display:flex;align-items:center">
+          <input type="date" value="${sEndVal}" onchange="overrideStepDate('${ph.id}','${step.stt}','end',this.value)"
+            style="width:100%;border:1.5px solid;${ovBorder};border-radius:4px;padding:2px 3px;font-size:10px;outline:none;background:transparent;color:#444;cursor:pointer">
+        </div>
+        <div class="gc-s" style="${gs(4,step.hasOv?col+'07':'#fff')};width:${W.days}px;padding:4px 6px;font-size:11px;font-weight:600;color:${step.hasOv?col:'#00695C'};border-right:3px solid #b2dfdb;text-align:center;display:flex;align-items:center;justify-content:center">${dStr}</div>
+        ${sCells}
+      </div>`;
+    });
+  });
+
+  const totalFixed = phaseTasks.reduce((a, pt) => a + pt.days, 0);
+  const calDays = Math.round((chartEnd - chartStart) / 86400000) + 1;
+  const totalW = W.stt + W.name + W.start + W.end + W.days + months.length * CW;
+
+  sumEl.innerHTML = `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="sum-card" style="flex:none"><div class="sv">${phaseTasks.length}</div><div class="sk">Giai đoạn</div></div>
+    <div class="sum-card" style="flex:none"><div class="sv">${phaseTasks.reduce((a,pt)=>a+pt.steps.length,0)}</div><div class="sk">Bước công việc</div></div>
+    <div class="sum-card" style="flex:none"><div class="sv">${totalFixed}</div><div class="sk">Ngày định mức</div></div>
+    <div class="sum-card" style="flex:none"><div class="sv">${calDays}</div><div class="sk">Ngày lịch tổng</div></div>
+    <div class="sum-card" style="flex:none"><div class="sv">${phaseTasks[0].start.toLocaleDateString('vi-VN')}</div><div class="sk">Bắt đầu</div></div>
+    <div class="sum-card" style="flex:none"><div class="sv">${chartEnd.toLocaleDateString('vi-VN')}</div><div class="sk">Kết thúc dự kiến</div></div>
+  </div>`;
+
+  out.innerHTML = `<div id="gantt-print-area" style="overflow-x:auto;border-radius:10px;box-shadow:0 1px 5px rgba(0,0,0,.09);background:#fff">
+    <div style="min-width:${totalW}px">
+      <div style="display:flex;min-height:34px;background:#E0F2F1;border-bottom:2px solid #b2dfdb;position:sticky;top:0;z-index:10">
+        <div style="${gh(0)};width:${W.stt}px;padding:4px 6px;font-size:10px;font-weight:700;color:#004D40;border-right:1px solid #b2dfdb">#</div>
+        <div style="${gh(1)};width:${W.name}px;padding:4px 8px;font-size:10px;font-weight:700;color:#004D40;border-right:1px solid #b2dfdb">GIAI ĐOẠN / CÔNG VIỆC</div>
+        <div style="${gh(2)};width:${W.start}px;padding:4px 6px;font-size:10px;font-weight:700;color:#004D40;border-right:1px solid #b2dfdb">BẮT ĐẦU</div>
+        <div style="${gh(3)};width:${W.end}px;padding:4px 6px;font-size:10px;font-weight:700;color:#004D40;border-right:1px solid #b2dfdb">KẾT THÚC</div>
+        <div style="${gh(4)};width:${W.days}px;padding:4px 6px;font-size:10px;font-weight:700;color:#004D40;border-right:3px solid #b2dfdb;text-align:center">NGÀY</div>
+        ${mHeader}
+      </div>
+      ${rows}
+      <div id="gantt-legend-row" style="padding:7px 10px;font-size:11px;color:#888;border-top:1px solid #e0f0ee">
+        🟧 Tháng hiện tại &nbsp;|&nbsp; ▬ Thanh đặc = Có ngày định mức &nbsp;|&nbsp; ┄ Nét đứt = Không có ngày cố định
+      </div>
+    </div>
+  </div>`;
+}
+// ── END GANTT v2 ────────────────────────────────────────
+
 function renderStakeholders(){
   let html='';
   for(const sk of STAKEHOLDERS){
@@ -1031,7 +1546,13 @@ function renderStakeholders(){
 renderSummary();
 renderTimeline('');
 renderStakeholders();
+initGantt();
 applyFilter();
 </script>
+
+<footer>
+  <p>🏗️ <strong>Tiến độ Pháp lý – Dự án Đầu tư Xây dựng</strong> &nbsp;|&nbsp; Tác giả: <strong>Võ Đỗ Hùng</strong> &nbsp;|&nbsp; Căn cứ: Luật Đầu tư 2025, Luật Xây dựng 2025, Luật Đất đai 2024</p>
+  <p style="margin-top:5px;opacity:.7">Nội dung tham khảo <a href="https://qspro.vn" target="_blank">Bùi Mạnh Thành – QS/PM Vietnam</a> &nbsp;|&nbsp; Chỉ phục vụ tra cứu, không thay thế văn bản pháp luật gốc</p>
+</footer>
 </body>
 </html>
