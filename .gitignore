@@ -1,0 +1,6 @@
+# Chỉ deploy web app (index.html + app_data.json)
+*
+!index.html
+!app_data.json
+!README.md
+!.gitignore
